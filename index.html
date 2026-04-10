@@ -185,7 +185,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 <script>
 const CONFIG = {
   // วาง URL จาก Google Apps Script Deploy ที่นี่
-  SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbyWHGzpti8ey8nyMXHS8Ix2kl3qIrVxS9S2slDNJ4kHVv8-2VmPv6xBud54j35w-GpZ/exec',
+  SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxyroUNRd_3fH2YVxe54cxKaOZosAJNW4m2MY8ul62fTusVK_U8WEPN684Ri3NjBrCO/exec',
 
   // ตั้งค่า Line ผ่านหน้า "ตั้งค่า" ในแอป (ไม่ต้องแก้ที่นี่)
   // Google Sheet ID (สำหรับ link ไปยัง Sheet โดยตรง)
@@ -767,22 +767,24 @@ async function testLine() {
 async function sendLineMsg(text) {
   showToast('กำลังส่ง Line...');
   try {
-    const res = await fetch('https://api.line.me/v2/bot/message/push', {
+    const res = await fetch(CONFIG.SHEET_API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + lineToken
-      },
-      body: JSON.stringify({ to: lineTarget, messages: [{ type: 'text', text }] })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'sendLine',
+        token:  lineToken,
+        target: lineTarget,
+        text:   text
+      })
     });
-    if (res.ok) {
+    const data = await res.json();
+    if (data.status === 'success') {
       showToast('ส่ง Line สำเร็จ ✓', 'ok');
     } else {
-      const d = await res.json();
-      showToast('Line Error: ' + (d.message || res.status), 'err');
+      showToast('Line Error: ' + JSON.stringify(data.line), 'err');
     }
   } catch (err) {
-    showToast('เชื่อมต่อ Line ไม่ได้: ' + err.message, 'err');
+    showToast('Error: ' + err.message, 'err');
   }
 }
 
