@@ -145,7 +145,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 //  SHEET_ID      = ID ของ Google Sheets (จาก URL)
 // ============================================================
 const CONFIG = {
-  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbxeLWJUNV6mYmQUWBYj4ioimw2Kz_c3QKurCdi-WWFcDCwKFLYm2fMyXlPY6lE1Vvdl/exec',
+  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbyLhGKSWw9XuIZRL5TRSKCd1YJ7vqDXq_9V6a2DB2mAclJQy9Yi25YJUmhLxv525YwL/exec',
   SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
 };
 </script>
@@ -425,12 +425,7 @@ async function submitReport(){
 
   // บันทึกลง Google Sheets
   try{
-    const res=await fetch(CONFIG.SHEET_API_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'addReport',data:r})
-    });
-    const d=await res.json();
+    const d = await callScript({action:'addReport', data:r});
     if(d.status==='success') showToast('บันทึก '+id+' สำเร็จ ✓','ok');
     else showToast('Sheets Error: '+d.message,'err');
   }catch(e){showToast('Sheets: '+e.message,'err');}
@@ -474,8 +469,7 @@ function toggleInc(i){document.getElementById('ib-'+i)?.classList.toggle('open')
 async function loadDashboard(){
   try{
     document.getElementById('hotspot-list').innerHTML='<div class="loading-text">กำลังโหลด...</div>';
-    const res=await fetch(CONFIG.SHEET_API_URL+'?action=getStats');
-    const d=await res.json();
+    const d = await callScript({action:'getStats'});
     if(d.status!=='success') throw new Error(d.message);
     const s=d.stats;
     document.getElementById('d-total').textContent=s.total;
@@ -582,24 +576,36 @@ async function testLine(){
 }
 
 // ──────────────────────────────────────────────────────────
-//  sendLineViaScript
-//  ส่งข้อความ Line โดยผ่าน Google Apps Script เป็นตัวกลาง
-//  แก้ปัญหา CORS ที่ Browser บล็อกการเรียก Line API โดยตรง
+//  callScript — helper กลางสำหรับเรียก Apps Script ทุกอย่าง
+//
+//  สาเหตุที่ต้องใช้ text/plain และ redirect:follow:
+//  Apps Script doPost จะ redirect 302 ก่อนตอบกลับ
+//  ถ้าใช้ Content-Type: application/json browser จะส่ง
+//  OPTIONS preflight ก่อน ซึ่ง Apps Script ไม่รองรับ
+//  → ใช้ text/plain เพื่อข้าม preflight
+//  → ใช้ redirect:follow เพื่อตาม 302 ได้ถูกต้อง
 // ──────────────────────────────────────────────────────────
+async function callScript(payload){
+  const res = await fetch(CONFIG.SHEET_API_URL, {
+    method   : 'POST',
+    redirect : 'follow',
+    headers  : { 'Content-Type': 'text/plain' },   // ← สำคัญ: ข้าม preflight
+    body     : JSON.stringify(payload)
+  });
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e){ return { status:'error', message:'Parse error: '+text.slice(0,120) }; }
+}
+
 async function sendLineViaScript(text){
   showToast('กำลังส่งแจ้งเตือน Line...');
   try{
-    const res=await fetch(CONFIG.SHEET_API_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        action:'sendLine',
-        token:lineToken,
-        target:lineTarget,
-        text:text
-      })
+    const d = await callScript({
+      action : 'sendLine',
+      token  : lineToken,
+      target : lineTarget,
+      text   : text
     });
-    const d=await res.json();
     if(d.status==='success'){
       showToast('ส่ง Line สำเร็จ ✓','ok');
     }else{
@@ -643,8 +649,7 @@ function loadSettings(){
 async function testSheet(){
   showToast('กำลังทดสอบ...');
   try{
-    const res=await fetch(CONFIG.SHEET_API_URL+'?action=ping');
-    const d=await res.json();
+    const d = await callScript({action:'ping'});
     if(d.status==='success'){
       document.getElementById('sheet-dot').className='sdot ok';
       document.getElementById('sheet-status').textContent='เชื่อมต่อ Apps Script สำเร็จ ✓';
