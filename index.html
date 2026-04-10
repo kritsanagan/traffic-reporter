@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -145,7 +146,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 //  SHEET_ID      = ID ของ Google Sheets (จาก URL)
 // ============================================================
 const CONFIG = {
-  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbyLhGKSWw9XuIZRL5TRSKCd1YJ7vqDXq_9V6a2DB2mAclJQy9Yi25YJUmhLxv525YwL/exec',
+  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbwZvbkkLB4hB1UTM32G5VPJJFczxbqinCNmzrSwwNo2NoqoH9YBG9aQfcTDEF6tf02j/exec',
   SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
 };
 </script>
@@ -203,11 +204,15 @@ const CONFIG = {
     <div id="drivers-container"></div>
     <button class="add-driver" onclick="addDriver()">+ เพิ่มผู้ขับขี่ / ยานพาหนะ</button>
     <div class="slabel">ภาพถ่ายหลักฐาน</div>
-    <div class="photo-row">
-      <div class="photo-box" onclick="addPhoto(this)">📷</div>
-      <div class="photo-box" onclick="addPhoto(this)">📷</div>
-      <div class="photo-box" onclick="addPhoto(this)">📷</div>
-      <div class="photo-box" onclick="addPhoto(this)">📷</div>
+    <input type="file" id="photo-input" accept="image/*" multiple
+      style="display:none" onchange="handlePhotoSelect(this)">
+    <div class="photo-row" id="photo-row">
+      <div class="photo-box" id="photo-add-btn" onclick="document.getElementById('photo-input').click()">
+        <div style="text-align:center;pointer-events:none">
+          <div style="font-size:22px">📷</div>
+          <div style="font-size:10px;margin-top:3px;color:var(--muted)">ถ่าย/เลือกรูป</div>
+        </div>
+      </div>
     </div>
     <div class="field"><label>รายละเอียดเพิ่มเติม</label>
       <textarea id="detail" rows="3" placeholder="สภาพถนน สภาพอากาศ หรือข้อมูลเพิ่มเติม..."></textarea></div>
@@ -327,15 +332,62 @@ const SB={1:'#FCEBEB',2:'#FAEEDA',3:'#EAF3DE'};
 const ST={1:'#A32D2D',2:'#854F0B',3:'#3B6D11'};
 
 // ── Init ───────────────────────────────────────────────────
-window.onload=()=>{
+window.onload=async ()=>{
   loadSettings();
   updateClock();
   setInterval(updateClock,1000);
   addDriver();
-  renderHistory();
   document.getElementById('sheet-link').href=
     'https://docs.google.com/spreadsheets/d/'+CONFIG.SHEET_ID+'/edit';
+  // โหลดประวัติจาก Google Sheets ตอนเปิดแอป
+  await loadReportsFromSheet();
 };
+
+async function loadReportsFromSheet(){
+  document.getElementById('history-list').innerHTML='<div class="loading-text">กำลังโหลดประวัติ...</div>';
+  try{
+    const d = await callScript({action:'getAllReports'});
+    if(d.status==='success' && d.reports && d.reports.length){
+      // แปลงข้อมูลจาก Sheets กลับเป็น format ที่แอปใช้
+      const sevMap={'รุนแรง':1,'ปานกลาง':2,'เล็กน้อย':3};
+      reports = d.reports.map(function(r){
+        const drivers = (r['ข้อมูลผู้ขับขี่']||'').split('; ').filter(Boolean).map(function(s){
+          const parts = s.split('|');
+          return {name:parts[0]||'',phone:parts[1]||'',plate:parts[2]||''};
+        });
+        const sev = r['ความรุนแรง']||'';
+        return {
+          id:       r['รหัสรายงาน']||'',
+          date:     r['วันที่']||'',
+          time:     r['เวลา']||'',
+          road:     r['ถนน/สถานที่']||'',
+          type:     r['ประเภทอุบัติเหตุ']||'',
+          severity: sev,
+          sevNum:   sevMap[sev]||2,
+          injured:  Number(r['ผู้บาดเจ็บ'])||0,
+          dead:     Number(r['ผู้เสียชีวิต'])||0,
+          gps:      r['พิกัด GPS']||'',
+          detail:   r['รายละเอียด']||'',
+          officer:  r['เจ้าหน้าที่']||'',
+          drivers:  drivers
+        };
+      });
+      // เรียงจากใหม่ไปเก่า
+      reports.sort(function(a,b){ return b.id.localeCompare(a.id); });
+      // ตั้ง reportCounter ให้ต่อจากตัวสุดท้าย
+      if(reports.length){
+        const last = reports[0].id.replace('RPT-','');
+        reportCounter = (parseInt(last)||0) + 1;
+      }
+      renderHistory();
+    } else {
+      renderHistory();
+    }
+  }catch(e){
+    console.error('loadReports error:',e);
+    renderHistory();
+  }
+}
 
 function updateClock(){
   const n=new Date();
@@ -394,7 +446,37 @@ function collectDrivers(){
   return d;
 }
 
-function addPhoto(el){photoCount++;el.textContent='📸 '+photoCount;el.className='photo-box filled';}
+// ── Photos ──────────────────────────────────────────────
+let photoFiles = [];
+
+function handlePhotoSelect(input){
+  const files = Array.from(input.files);
+  if(!files.length) return;
+  files.forEach(file => {
+    photoFiles.push(file);
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const idx = photoFiles.length - 1;
+      const row = document.getElementById('photo-row');
+      const addBtn = document.getElementById('photo-add-btn');
+      const box = document.createElement('div');
+      box.className = 'photo-box filled';
+      box.style.cssText = 'position:relative;padding:0;overflow:hidden;cursor:default';
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:10px';
+      const xbtn = document.createElement('button');
+      xbtn.textContent = '00d7';
+      xbtn.style.cssText = 'position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;font-size:12px;cursor:pointer';
+      xbtn.onclick = function(){ photoFiles[idx]=null; box.remove(); };
+      box.appendChild(img); box.appendChild(xbtn);
+      row.insertBefore(box, addBtn);
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+  showToast('เพิ่มรูปภาพ '+files.length+' รูป','ok');
+}
 
 // ── Submit ─────────────────────────────────────────────────
 async function submitReport(){
@@ -564,7 +646,7 @@ async function sendLineReport(i){
 👤 ผู้ขับขี่:
 ${driversText}
 ━━━━━━━━━━━━━━━
-📌 GPS: ${r.gps||'ไม่ระบุ'}
+📌 GPS: ${r.gps||'ไม่ระบุ'}${r.detail?'\n📝 รายละเอียด: '+r.detail:''}
 📋 รายงานโดย: ${r.officer||officer}`;
   await sendLineViaScript(msg);
   if(btn){btn.disabled=false;btn.textContent='💬 แจ้งเตือน Line';}
