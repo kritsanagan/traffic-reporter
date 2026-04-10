@@ -5,38 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>ระบบจราจรภาคสนาม</title>
 <style>
-/* ============================================================
-   ระบบจราจรภาคสนาม — Web App v3.0
-   รองรับ: Line Messaging API + Google Sheets
-============================================================ */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --blue:#1a56db;--blue2:#2563eb;
   --green:#1D9E75;--amber:#ef9f27;--red:#e24b4a;
-  --bg:#ffffff;--bg2:#f5f5f4;--bg3:#e8e8e6;
-  --border:rgba(0,0,0,.12);--border2:rgba(0,0,0,.22);
-  --text:#1a1a1a;--muted:#6b7280;
+  --bg:#fff;--bg2:#f5f5f4;--bg3:#e8e8e6;
+  --border:rgba(0,0,0,.12);--text:#1a1a1a;--muted:#6b7280;
 }
-@media(prefers-color-scheme:dark){
-  :root{
-    --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
-    --border:rgba(255,255,255,.12);--border2:rgba(255,255,255,.22);
-    --text:#f2f2f7;--muted:#8e8e93;
-  }
-}
-body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;background:var(--bg);color:var(--text);font-size:16px}
-
-.app{max-width:420px;margin:0 auto;padding:0 0 72px}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+  --border:rgba(255,255,255,.12);--text:#f2f2f7;--muted:#8e8e93;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;background:var(--bg);color:var(--text)}
+.app{max-width:430px;margin:0 auto;padding-bottom:72px}
 .topbar{background:var(--blue);padding:14px 16px 12px}
-.topbar-title{color:#fff;font-size:15px;font-weight:600}
-.topbar-sub{color:rgba(255,255,255,.75);font-size:12px;margin-top:2px}
+.topbar-t{color:#fff;font-size:15px;font-weight:600}
+.topbar-s{color:rgba(255,255,255,.75);font-size:12px;margin-top:2px}
 .tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border)}
 .tab{flex:1;padding:10px 0;font-size:12px;font-weight:500;text-align:center;cursor:pointer;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent}
 .tab.active{color:var(--blue2);border-bottom-color:var(--blue2)}
 .panel{display:none;padding:16px}
 .panel.active{display:block}
-
-/* Form elements */
 .slabel{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:16px 0 8px}
 .slabel:first-child{margin-top:0}
 .field{margin-bottom:12px}
@@ -48,8 +37,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue2)}
 .field textarea{resize:none;line-height:1.5}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-
-/* Severity buttons */
 .sev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .sev-btn{padding:11px 4px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:500;text-align:center;cursor:pointer;background:var(--bg);color:var(--text)}
 .sev-btn.sel-1{background:#FCEBEB;border-color:#E24B4A;color:#A32D2D}
@@ -57,12 +44,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 .sev-btn.sel-3{background:#EAF3DE;border-color:#639922;color:#3B6D11}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
 .dot-r{background:#E24B4A}.dot-a{background:#EF9F27}.dot-g{background:#1D9E75}
-
-/* GPS box */
 .loc-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;display:flex;gap:10px;align-items:center}
 .loc-ico{width:36px;height:36px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-
-/* Driver card */
 .driver-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
 .driver-head{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .dnum{width:20px;height:20px;border-radius:50%;background:var(--blue2);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -70,18 +53,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 .plate-inp{border:none;background:none;font-family:monospace;font-size:16px;font-weight:700;letter-spacing:.1em;text-align:center;width:100%;color:var(--text);text-transform:uppercase;outline:none}
 .plate-lbl{font-size:10px;color:var(--muted);margin-top:2px}
 .add-driver{width:100%;padding:10px;border:1px dashed var(--border);border-radius:10px;background:none;color:var(--muted);font-size:13px;cursor:pointer;margin-bottom:14px}
-
-/* Photo */
 .photo-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
 .photo-box{aspect-ratio:1;border:1px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg2);font-size:22px;color:var(--muted)}
 .photo-box.filled{font-size:11px;color:var(--muted);text-align:center;padding:4px;border-style:solid}
-
-/* Buttons */
 .btn-primary{width:100%;padding:13px;background:var(--blue2);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
 .btn-primary:active{opacity:.85}
 .btn-primary:disabled{background:#aaa;cursor:not-allowed}
-
-/* Metric cards */
 .metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .metric{background:var(--bg2);border-radius:10px;padding:12px}
 .metric-val{font-size:26px;font-weight:700;color:var(--text)}
@@ -90,16 +67,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 .badge-r{background:#FCEBEB;color:#A32D2D}
 .badge-g{background:#EAF3DE;color:#3B6D11}
 .badge-a{background:#FAEEDA;color:#854F0B}
-
-/* Chart bars */
 .chart-wrap{background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:14px}
 .chart-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px}
 .bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.bar-lbl{font-size:12px;color:var(--muted);width:76px;flex-shrink:0;text-align:right}
+.bar-lbl{font-size:12px;color:var(--muted);width:80px;flex-shrink:0;text-align:right}
 .bar-track{flex:1;height:22px;background:var(--bg);border-radius:4px;overflow:hidden}
-.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:600;color:#fff;transition:width .5s}
-
-/* History list */
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:600;color:#fff}
 .inc-list{display:flex;flex-direction:column;gap:8px}
 .inc-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer}
 .inc-hdr{display:flex;align-items:flex-start;gap:10px}
@@ -115,33 +88,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 .d-phone{color:var(--blue2)}
 .inc-btns{display:flex;gap:8px;margin-top:10px}
 .btn-pdf{flex:1;padding:8px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer}
-.btn-line{flex:1;padding:8px;background:#06C755;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer}
-.btn-sheet{flex:1;padding:8px;background:#0F9D58;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer}
-
-/* Settings */
+.btn-line{flex:1;padding:8px;background:#06C755;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500}
+.btn-line:disabled{background:#aaa;cursor:not-allowed}
 .settings-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
 .settings-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.info-box{background:#dbeafe;border:1px solid #93c5fd;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#1e40af;line-height:1.6}
+.info-box{background:#dbeafe;border:1px solid #93c5fd;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#1e40af;line-height:1.7}
 .status-row{display:flex;gap:8px;align-items:center;margin-bottom:12px}
-.sdot{width:8px;height:8px;border-radius:50%;background:#aaa;display:inline-block}
+.sdot{width:8px;height:8px;border-radius:50%;background:#aaa;display:inline-block;flex-shrink:0}
 .sdot.ok{background:var(--green)}
 .test-btn{padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;color:var(--text);white-space:nowrap}
 .save-btn{width:100%;padding:11px;background:var(--blue2);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
-
-/* Dashboard Tab */
 .dash-card{background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:14px}
 .dash-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px}
 .hotspot-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
 .hotspot-row:last-child{border-bottom:none}
 .hotspot-rank{width:22px;height:22px;border-radius:50%;background:var(--blue2);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.hotspot-rank.r1{background:#E24B4A}
-.hotspot-rank.r2{background:#EF9F27}
-.hotspot-rank.r3{background:#1a56db}
-.hotspot-name{flex:1;margin-left:10px;color:var(--text)}
+.hotspot-rank.r1{background:#E24B4A}.hotspot-rank.r2{background:#EF9F27}.hotspot-rank.r3{background:var(--blue2)}
+.hotspot-name{flex:1;margin-left:10px;color:var(--text);font-size:12px}
 .hotspot-count{font-size:12px;font-weight:600;color:var(--muted);background:var(--bg3);padding:2px 8px;border-radius:20px}
 .loading-text{font-size:13px;color:var(--muted);text-align:center;padding:20px 0}
-
-/* PDF Modal */
 .overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
 .overlay.show{display:flex}
 .modal{background:var(--bg);border-radius:14px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto}
@@ -156,22 +121,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 .pdf-sec{margin-bottom:16px}
 .pdf-sec-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
 .pdf-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
-.pdf-lbl{color:var(--muted)}
-.pdf-val{color:var(--text);font-weight:600;text-align:right;max-width:60%}
-.pdf-sev{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.pdf-lbl{color:var(--muted)}.pdf-val{color:var(--text);font-weight:600;text-align:right;max-width:60%}
 .pdf-driver{background:var(--bg2);border-radius:8px;padding:10px;margin-bottom:8px}
 .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;text-align:center}
 .sig-line{border-top:1px solid var(--text);padding-top:6px;margin-top:32px;color:var(--muted)}
 .print-btn{width:100%;padding:13px;background:var(--blue2);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px}
-
-/* Toast */
-.toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;z-index:300;max-width:90%}
+.toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;z-index:300;max-width:90%;text-align:center}
 .toast.show{opacity:1}
 .toast.ok{background:#065f46}
 .toast.err{background:#7f1d1d}
-
-/* Nav */
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:420px;max-width:100%;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:100}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:430px;max-width:100%;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:100}
 .nbtn{flex:1;padding:10px 0 8px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
 .nbtn svg{width:20px;height:20px}
 .nbtn.active{color:var(--blue2)}
@@ -179,26 +138,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 </head>
 <body>
 
-<!-- ============================================================
-     ⚙️  ตั้งค่า — แก้ไขค่านี้ก่อนใช้งาน
-============================================================ -->
 <script>
+// ============================================================
+//  ⚙️  แก้ไขค่านี้ก่อนใช้งาน
+//  SHEET_API_URL = URL จาก Apps Script Deploy
+//  SHEET_ID      = ID ของ Google Sheets (จาก URL)
+// ============================================================
 const CONFIG = {
-  // วาง URL จาก Google Apps Script Deploy ที่นี่
-  SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxyroUNRd_3fH2YVxe54cxKaOZosAJNW4m2MY8ul62fTusVK_U8WEPN684Ri3NjBrCO/exec',
-
-  // ตั้งค่า Line ผ่านหน้า "ตั้งค่า" ในแอป (ไม่ต้องแก้ที่นี่)
-  // Google Sheet ID (สำหรับ link ไปยัง Sheet โดยตรง)
-  SHEET_ID: '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
+  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbxeLWJUNV6mYmQUWBYj4ioimw2Kz_c3QKurCdi-WWFcDCwKFLYm2fMyXlPY6lE1Vvdl/exec',
+  SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
 };
 </script>
 
 <div class="app">
   <div class="topbar">
-    <div class="topbar-title">🚔 ระบบจราจรภาคสนาม</div>
-    <div class="topbar-sub" id="datetime">กำลังโหลด...</div>
+    <div class="topbar-t">🚔 ระบบจราจรภาคสนาม</div>
+    <div class="topbar-s" id="datetime">กำลังโหลด...</div>
   </div>
-
   <div class="tabs">
     <button class="tab active" onclick="switchTab('report')">รายงาน</button>
     <button class="tab" onclick="switchTab('history')">ประวัติ</button>
@@ -206,7 +162,7 @@ const CONFIG = {
     <button class="tab" onclick="switchTab('settings')">ตั้งค่า</button>
   </div>
 
-  <!-- ===== แท็บ: รายงานอุบัติเหตุ ===== -->
+  <!-- ===== รายงานอุบัติเหตุ ===== -->
   <div id="panel-report" class="panel active">
     <div class="slabel">ระดับความรุนแรง</div>
     <div class="sev-grid">
@@ -214,18 +170,16 @@ const CONFIG = {
       <div class="sev-btn" id="sev-2" onclick="setSev(2)"><span class="dot dot-a"></span>ปานกลาง</div>
       <div class="sev-btn" id="sev-3" onclick="setSev(3)"><span class="dot dot-g"></span>เล็กน้อย</div>
     </div>
-
     <div class="loc-box">
       <div class="loc-ico">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="#1a56db"><path d="M8 1.5C5.51 1.5 3.5 3.51 3.5 6c0 3.75 4.5 8.5 4.5 8.5S12.5 9.75 12.5 6c0-2.49-2.01-4.5-4.5-4.5zm0 6.1a1.6 1.6 0 110-3.2 1.6 1.6 0 010 3.2z"/></svg>
       </div>
       <div style="flex:1">
-        <div style="font-size:13px;color:var(--text)" id="loc-text">กดเพื่อระบุตำแหน่ง GPS</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="loc-sub">แตะเพื่อรีเฟรช</div>
+        <div style="font-size:13px;color:var(--text)" id="loc-text">กดปุ่ม GPS เพื่อระบุตำแหน่ง</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="loc-sub">แตะปุ่มด้านขวาเพื่อรับพิกัด</div>
       </div>
-      <button onclick="getGPS()" style="padding:6px 10px;background:var(--blue2);color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer">GPS</button>
+      <button onclick="getGPS()" style="padding:7px 12px;background:var(--blue2);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500">GPS</button>
     </div>
-
     <div class="field"><label>ถนน / เส้นทาง</label>
       <input type="text" id="road-input" placeholder="เช่น ถนนสุขุมวิท ช่วงซอย 21"></div>
     <div class="field"><label>ประเภทอุบัติเหตุ</label>
@@ -238,19 +192,16 @@ const CONFIG = {
         <option>รถชนสิ่งกีดขวาง</option>
         <option>รถจักรยานยนต์ล้ม</option>
         <option>อื่นๆ</option>
-      </select>
-    </div>
+      </select></div>
     <div class="two-col" style="margin-bottom:12px">
       <div class="field" style="margin:0"><label>ผู้บาดเจ็บ</label>
         <input type="number" min="0" value="0" id="injured" style="text-align:center"></div>
       <div class="field" style="margin:0"><label>ผู้เสียชีวิต</label>
         <input type="number" min="0" value="0" id="dead" style="text-align:center"></div>
     </div>
-
     <div class="slabel">ข้อมูลผู้ขับขี่และยานพาหนะ</div>
     <div id="drivers-container"></div>
     <button class="add-driver" onclick="addDriver()">+ เพิ่มผู้ขับขี่ / ยานพาหนะ</button>
-
     <div class="slabel">ภาพถ่ายหลักฐาน</div>
     <div class="photo-row">
       <div class="photo-box" onclick="addPhoto(this)">📷</div>
@@ -258,75 +209,57 @@ const CONFIG = {
       <div class="photo-box" onclick="addPhoto(this)">📷</div>
       <div class="photo-box" onclick="addPhoto(this)">📷</div>
     </div>
-
     <div class="field"><label>รายละเอียดเพิ่มเติม</label>
-      <textarea id="detail" rows="3" placeholder="สภาพถนน สภาพอากาศ หรือข้อมูลเพิ่มเติม..."></textarea>
-    </div>
-
+      <textarea id="detail" rows="3" placeholder="สภาพถนน สภาพอากาศ หรือข้อมูลเพิ่มเติม..."></textarea></div>
     <button class="btn-primary" id="submit-btn" onclick="submitReport()">💾 บันทึกรายงาน</button>
   </div>
 
-  <!-- ===== แท็บ: ประวัติรายงาน ===== -->
+  <!-- ===== ประวัติ ===== -->
   <div id="panel-history" class="panel">
     <div class="inc-list" id="history-list">
-      <div class="loading-text">กำลังโหลดข้อมูล...</div>
+      <div class="loading-text">ยังไม่มีรายงาน</div>
     </div>
   </div>
 
-  <!-- ===== แท็บ: วิเคราะห์ข้อมูล (Dashboard) ===== -->
+  <!-- ===== วิเคราะห์ ===== -->
   <div id="panel-dashboard" class="panel">
     <div class="metrics" id="dash-metrics">
       <div class="metric"><div class="metric-val" id="d-total">—</div><div class="metric-lbl">ทั้งหมด</div></div>
       <div class="metric"><div class="metric-val" id="d-injured">—</div><div class="metric-lbl">บาดเจ็บ</div></div>
-      <div class="metric"><div class="metric-val" id="d-severe">—</div><div class="metric-lbl">รุนแรง</div><div class="metric-badge badge-r" id="d-severe-pct"></div></div>
+      <div class="metric"><div class="metric-val" id="d-severe">—</div><div class="metric-lbl">รุนแรง</div></div>
       <div class="metric"><div class="metric-val" id="d-dead">—</div><div class="metric-lbl">เสียชีวิต</div></div>
     </div>
-
     <div class="chart-wrap"><div class="chart-title">ประเภทอุบัติเหตุ</div><div id="chart-type"></div></div>
     <div class="chart-wrap"><div class="chart-title">ช่วงเวลาอันตราย</div><div id="chart-hour"></div></div>
-
     <div class="dash-card">
-      <div class="dash-title">🔥 จุดเกิดอุบัติเหตุซ้ำ (Hotspot)</div>
-      <div id="hotspot-list"><div class="loading-text">กำลังโหลด...</div></div>
+      <div class="dash-title">🔥 จุดเกิดอุบัติเหตุซ้ำ</div>
+      <div id="hotspot-list"><div class="loading-text">กดรีเฟรชเพื่อโหลดข้อมูล</div></div>
     </div>
-
-    <button onclick="loadDashboard()" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;color:var(--text)">
-      🔄 รีเฟรชข้อมูล
-    </button>
+    <button onclick="loadDashboard()" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;color:var(--text)">🔄 รีเฟรชข้อมูล</button>
     <div style="margin-top:10px;text-align:center">
-      <a id="sheet-link" href="#" target="_blank" style="font-size:12px;color:var(--blue2)">
-        📊 เปิด Google Sheets เพื่อวิเคราะห์เพิ่มเติม →
-      </a>
+      <a id="sheet-link" href="#" target="_blank" style="font-size:12px;color:var(--blue2)">📊 เปิด Google Sheets →</a>
     </div>
   </div>
 
-  <!-- ===== แท็บ: ตั้งค่า ===== -->
+  <!-- ===== ตั้งค่า ===== -->
   <div id="panel-settings" class="panel">
-
     <div class="info-box">
-      <strong>📱 วิธีตั้งค่า Line Messaging API</strong><br>
-      1. ไปที่ <strong>developers.line.biz</strong> → สร้าง Provider<br>
-      2. สร้าง <strong>Messaging API Channel</strong><br>
-      3. ไปที่แท็บ Messaging API → กด <strong>"Issue"</strong> เพื่อรับ Token<br>
-      4. เพิ่ม Bot เข้า Group → ส่งข้อความ → ดู groupId จาก Webhook<br>
-      5. วาง Token และ Group ID ด้านล่าง
+      <strong>วิธีหา Channel Access Token และ Group ID</strong><br>
+      1. <strong>Token:</strong> developers.line.biz → Channel → Messaging API → Issue token<br>
+      2. <strong>Group ID:</strong> เพิ่ม Bot เข้า Group → ส่งข้อความ → ดู groupId จาก webhook.site<br>
+      3. ใส่ค่าทั้งสองด้านล่าง → กด "บันทึก" → กด "ทดสอบส่ง"
     </div>
-
     <div class="settings-card">
       <div class="settings-title">
-        <div style="width:20px;height:20px;border-radius:4px;background:#06C755;display:flex;align-items:center;justify-content:center">
+        <div style="width:20px;height:20px;border-radius:4px;background:#06C755;display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.26 1.74 6.12 4.39 7.89L5 22l4.28-1.39C10.44 21.17 11.21 21.33 12 21.33c5.52 0 10-4.03 10-9.33S17.52 2 12 2z"/></svg>
         </div>
         Line Messaging API
       </div>
-      <div class="field">
-        <label>Channel Access Token</label>
-        <input type="password" id="line-token" placeholder="วาง Channel Access Token">
-      </div>
-      <div class="field">
-        <label>Group ID หรือ User ID ปลายทาง</label>
-        <input type="text" id="line-target" placeholder="Cxxxxxxx หรือ Uxxxxxxx">
-      </div>
+      <div class="field"><label>Channel Access Token</label>
+        <input type="password" id="line-token" placeholder="วาง Channel Access Token ที่นี่"></div>
+      <div class="field"><label>Group ID ห้องสั่งการ (ขึ้นต้น C...)</label>
+        <input type="text" id="line-target" placeholder="Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"></div>
       <div class="status-row">
         <span class="sdot" id="line-dot"></span>
         <span style="font-size:12px;color:var(--muted);flex:1" id="line-status">ยังไม่ได้ตั้งค่า</span>
@@ -334,46 +267,37 @@ const CONFIG = {
       </div>
       <button class="save-btn" onclick="saveSettings()">บันทึกการตั้งค่า</button>
     </div>
-
     <div class="settings-card">
       <div class="settings-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M9 12h6M9 16h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2h-2M9 4a2 2 0 012-2h2a2 2 0 012 2v0a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M9 12h6M9 16h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2h-2M9 4a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         ข้อมูลสถานี / เจ้าหน้าที่
       </div>
       <div class="field"><label>ชื่อสถานี</label>
         <input type="text" id="pdf-station" placeholder="เช่น สภ.บางละมุง จ.ชลบุรี"></div>
-      <div class="field"><label>ชื่อ-ยศเจ้าหน้าที่</label>
-        <input type="text" id="pdf-officer" placeholder="เช่น ด.ต. สมศักดิ์ จริงใจ"></div>
+      <div class="field"><label>ชื่อ-ยศเจ้าหน้าที่ผู้รายงาน</label>
+        <input type="text" id="pdf-officer" placeholder="เช่น ด.ต.สมศักดิ์ จริงใจ"></div>
       <button class="save-btn" onclick="saveSettings()">บันทึกการตั้งค่า</button>
     </div>
-
     <div class="settings-card">
       <div class="settings-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F9D58" stroke-width="2"><path d="M9 17H7A5 5 0 017 7h2M15 7h2a5 5 0 010 10h-2M11 12h2"/></svg>
-        Google Sheets API
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F9D58" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        สถานะการเชื่อมต่อ
       </div>
-      <div class="status-row">
+      <div class="status-row" style="margin-bottom:8px">
         <span class="sdot" id="sheet-dot"></span>
-        <span style="font-size:12px;color:var(--muted);flex:1" id="sheet-status">ยังไม่ได้ตั้งค่า</span>
-        <button class="test-btn" onclick="testSheet()">ทดสอบเชื่อมต่อ</button>
+        <span style="font-size:12px;color:var(--muted);flex:1" id="sheet-status">ยังไม่ได้ทดสอบ</span>
+        <button class="test-btn" onclick="testSheet()">ทดสอบ Sheets</button>
       </div>
-      <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:4px">
-        URL ของ Google Sheets API อยู่ในไฟล์ index.html บรรทัด CONFIG.SHEET_API_URL
-        แก้ไขแล้ว re-upload ขึ้น GitHub
-      </p>
     </div>
   </div>
 </div>
 
-<!-- PDF Preview Modal -->
+<!-- PDF Modal -->
 <div class="overlay" id="pdf-overlay" onclick="closePdfOutside(event)">
-  <div class="modal" id="pdf-modal">
-    <div class="modal-bar">
-      <span class="modal-title">ตัวอย่างใบรายงาน</span>
-      <button class="modal-close" onclick="closePdf()">×</button>
-    </div>
-    <div class="modal-body" id="pdf-content"></div>
-  </div>
+  <div class="modal"><div class="modal-bar">
+    <span class="modal-title">ใบรายงานอุบัติเหตุ</span>
+    <button class="modal-close" onclick="closePdf()">×</button>
+  </div><div class="modal-body" id="pdf-content"></div></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -394,482 +318,359 @@ const CONFIG = {
 </div>
 
 <script>
-// ============================================================
-//  State & Constants
-// ============================================================
-let currentSev = 0, photoCount = 0, driverCount = 0;
-let gpsCoords = ''; 
-let reports = [];
-let reportCounter = 1;
-let lineToken = '', lineTarget = '';
-let station = '', officer = '';
+// ── State ──────────────────────────────────────────────────
+let currentSev=0, photoCount=0, driverCount=0, gpsCoords='', reportCounter=1;
+let reports=[], lineToken='', lineTarget='', station='', officer='';
+const SC={1:'#E24B4A',2:'#EF9F27',3:'#1D9E75'};
+const SL={1:'รุนแรง',2:'ปานกลาง',3:'เล็กน้อย'};
+const SB={1:'#FCEBEB',2:'#FAEEDA',3:'#EAF3DE'};
+const ST={1:'#A32D2D',2:'#854F0B',3:'#3B6D11'};
 
-const SEV_COLOR = {1:'#E24B4A', 2:'#EF9F27', 3:'#1D9E75'};
-const SEV_LABEL = {1:'รุนแรง', 2:'ปานกลาง', 3:'เล็กน้อย'};
-const SEV_BG    = {1:'#FCEBEB', 2:'#FAEEDA', 3:'#EAF3DE'};
-const SEV_TC    = {1:'#A32D2D', 2:'#854F0B', 3:'#3B6D11'};
-
-// ============================================================
-//  Init
-// ============================================================
-window.onload = () => {
+// ── Init ───────────────────────────────────────────────────
+window.onload=()=>{
   loadSettings();
   updateClock();
-  setInterval(updateClock, 1000);
+  setInterval(updateClock,1000);
   addDriver();
   renderHistory();
-  document.getElementById('sheet-link').href =
-    `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/edit`;
+  document.getElementById('sheet-link').href=
+    'https://docs.google.com/spreadsheets/d/'+CONFIG.SHEET_ID+'/edit';
 };
 
-// ============================================================
-//  Clock
-// ============================================================
-function updateClock() {
-  const now = new Date();
-  document.getElementById('datetime').textContent =
-    now.toLocaleDateString('th-TH', {weekday:'short', year:'numeric', month:'short', day:'numeric'}) +
-    ' · ' + now.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+function updateClock(){
+  const n=new Date();
+  document.getElementById('datetime').textContent=
+    n.toLocaleDateString('th-TH',{weekday:'short',year:'numeric',month:'short',day:'numeric'})+
+    ' · '+n.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 }
 
-// ============================================================
-//  GPS
-// ============================================================
-function getGPS() {
-  document.getElementById('loc-text').textContent = 'กำลังระบุตำแหน่ง...';
-  if (!navigator.geolocation) {
-    document.getElementById('loc-text').textContent = 'เบราว์เซอร์ไม่รองรับ GPS';
-    return;
-  }
+// ── GPS ────────────────────────────────────────────────────
+function getGPS(){
+  document.getElementById('loc-text').textContent='กำลังระบุตำแหน่ง...';
+  if(!navigator.geolocation){document.getElementById('loc-text').textContent='ไม่รองรับ GPS';return;}
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      const lat = pos.coords.latitude.toFixed(5);
-      const lng = pos.coords.longitude.toFixed(5);
-      gpsCoords = `${lat}° N, ${lng}° E`;
-      document.getElementById('loc-text').textContent = gpsCoords;
-      document.getElementById('loc-sub').textContent = `แม่นยำ ±${Math.round(pos.coords.accuracy)}m`;
+    pos=>{
+      const lat=pos.coords.latitude.toFixed(5), lng=pos.coords.longitude.toFixed(5);
+      gpsCoords=lat+'° N, '+lng+'° E';
+      document.getElementById('loc-text').textContent=gpsCoords;
+      document.getElementById('loc-sub').textContent='แม่นยำ ±'+Math.round(pos.coords.accuracy)+'m';
     },
-    err => {
-      document.getElementById('loc-text').textContent = 'ไม่สามารถระบุตำแหน่งได้';
-      document.getElementById('loc-sub').textContent = err.message;
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
+    err=>{document.getElementById('loc-text').textContent='ระบุตำแหน่งไม่ได้: '+err.message;},
+    {enableHighAccuracy:true,timeout:10000}
   );
 }
 
-// ============================================================
-//  Severity
-// ============================================================
-function setSev(n) {
-  currentSev = n;
-  [1,2,3].forEach(i =>
-    document.getElementById('sev-'+i).className = 'sev-btn' + (i===n ? ' sel-'+i : ''));
+// ── Severity ───────────────────────────────────────────────
+function setSev(n){
+  currentSev=n;
+  [1,2,3].forEach(i=>document.getElementById('sev-'+i).className='sev-btn'+(i===n?' sel-'+i:''));
 }
 
-// ============================================================
-//  Drivers
-// ============================================================
-function addDriver(name='', phone='', plate='') {
+// ── Drivers ────────────────────────────────────────────────
+function addDriver(name='',phone='',plate=''){
   driverCount++;
-  const n = driverCount;
-  const div = document.createElement('div');
-  div.className = 'driver-card';
-  div.id = 'dc-' + n;
-  div.innerHTML = `
-    <div class="driver-head">
-      <div class="dnum">${n}</div>ผู้ขับขี่คนที่ ${n}
-      <span onclick="removeDriver(${n})" style="margin-left:auto;cursor:pointer;font-size:20px;color:var(--muted);line-height:1">×</span>
-    </div>
+  const n=driverCount, div=document.createElement('div');
+  div.className='driver-card'; div.id='dc-'+n;
+  div.innerHTML=`<div class="driver-head"><div class="dnum">${n}</div>ผู้ขับขี่คนที่ ${n}
+    <span onclick="removeDriver(${n})" style="margin-left:auto;cursor:pointer;font-size:20px;color:var(--muted);line-height:1">×</span></div>
     <div class="field" style="margin-bottom:10px"><label>ชื่อ-นามสกุล</label>
       <input type="text" id="dn-${n}" placeholder="สมชาย ใจดี" value="${name}"></div>
     <div class="two-col">
       <div class="field" style="margin:0"><label>โทรศัพท์</label>
         <input type="tel" id="dp-${n}" placeholder="08X-XXX-XXXX" value="${phone}"></div>
       <div class="field" style="margin:0"><label>เลขทะเบียน</label>
-        <div class="plate-wrap">
-          <input class="plate-inp" id="dl-${n}" placeholder="กข 1234" maxlength="12" value="${plate}">
-          <div class="plate-lbl">ทะเบียนรถ</div>
-        </div>
-      </div>
-    </div>`;
+        <div class="plate-wrap"><input class="plate-inp" id="dl-${n}" placeholder="กข 1234" maxlength="12" value="${plate}">
+        <div class="plate-lbl">ทะเบียนรถ</div></div></div></div>`;
   document.getElementById('drivers-container').appendChild(div);
 }
-function removeDriver(n) { const e = document.getElementById('dc-'+n); if(e) e.remove(); }
+function removeDriver(n){const e=document.getElementById('dc-'+n);if(e)e.remove();}
 
-// ============================================================
-//  Photo
-// ============================================================
-function addPhoto(el) {
-  photoCount++;
-  el.textContent = '📸 ' + photoCount;
-  el.className = 'photo-box filled';
-}
-
-// ============================================================
-//  Collect form data
-// ============================================================
-function collectDrivers() {
-  const drivers = [];
-  document.querySelectorAll('[id^="dn-"]').forEach(el => {
-    const n = el.id.split('-')[1];
-    drivers.push({
-      name:  el.value || 'ไม่ระบุ',
-      phone: document.getElementById('dp-'+n).value || '-',
-      plate: document.getElementById('dl-'+n).value || '-'
-    });
+function collectDrivers(){
+  const d=[];
+  document.querySelectorAll('[id^="dn-"]').forEach(el=>{
+    const n=el.id.split('-')[1];
+    d.push({name:el.value||'ไม่ระบุ',phone:document.getElementById('dp-'+n).value||'-',plate:document.getElementById('dl-'+n).value||'-'});
   });
-  return drivers;
+  return d;
 }
 
-// ============================================================
-//  Submit Report
-// ============================================================
-async function submitReport() {
-  if (!currentSev) { showToast('กรุณาเลือกระดับความรุนแรง', 'err'); return; }
-  const btn = document.getElementById('submit-btn');
-  btn.disabled = true;
-  btn.textContent = 'กำลังบันทึก...';
+function addPhoto(el){photoCount++;el.textContent='📸 '+photoCount;el.className='photo-box filled';}
 
-  const now  = new Date();
-  const id   = 'RPT-' + String(reportCounter++).padStart(4, '0');
-  const report = {
-    id,
-    date:     now.toLocaleDateString('th-TH', {day:'2-digit', month:'2-digit', year:'numeric'}),
-    time:     now.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}),
-    road:     document.getElementById('road-input').value || 'ไม่ระบุสถานที่',
-    type:     document.getElementById('acc-type').value   || 'ไม่ระบุประเภท',
-    severity: SEV_LABEL[currentSev],
-    sevNum:   currentSev,
-    injured:  +document.getElementById('injured').value,
-    dead:     +document.getElementById('dead').value,
-    gps:      gpsCoords,
-    drivers:  collectDrivers(),
-    detail:   document.getElementById('detail').value,
-    officer:  document.getElementById('pdf-officer').value || officer
+// ── Submit ─────────────────────────────────────────────────
+async function submitReport(){
+  if(!currentSev){showToast('กรุณาเลือกระดับความรุนแรง','err');return;}
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=true; btn.textContent='กำลังบันทึก...';
+
+  const now=new Date();
+  const id='RPT-'+String(reportCounter++).padStart(4,'0');
+  const r={
+    id, sevNum:currentSev,
+    date:now.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    time:now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}),
+    road:document.getElementById('road-input').value||'ไม่ระบุสถานที่',
+    type:document.getElementById('acc-type').value||'ไม่ระบุประเภท',
+    severity:SL[currentSev],
+    injured:+document.getElementById('injured').value,
+    dead:+document.getElementById('dead').value,
+    gps:gpsCoords,
+    drivers:collectDrivers(),
+    detail:document.getElementById('detail').value,
+    officer:document.getElementById('pdf-officer').value||officer
   };
 
-  // บันทึกลง Google Sheets
-  try {
-    const res = await fetch(CONFIG.SHEET_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'addReport', data: report })
-    });
-    const result = await res.json();
-    if (result.status !== 'success') throw new Error(result.message);
-    showToast('บันทึก Google Sheets สำเร็จ ✓', 'ok');
-  } catch (err) {
-    showToast('Sheets: ' + err.message, 'err');
-  }
-
-  // บันทึกในหน่วยความจำ (local)
-  reports.unshift(report);
+  // บันทึกใน memory
+  reports.unshift(r);
   renderHistory();
 
-  btn.disabled = false;
-  btn.textContent = '💾 บันทึกรายงาน';
-  showToast('บันทึกรายงาน ' + id + ' สำเร็จ', 'ok');
-  setTimeout(() => switchNav('history'), 900);
+  // บันทึกลง Google Sheets
+  try{
+    const res=await fetch(CONFIG.SHEET_API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'addReport',data:r})
+    });
+    const d=await res.json();
+    if(d.status==='success') showToast('บันทึก '+id+' สำเร็จ ✓','ok');
+    else showToast('Sheets Error: '+d.message,'err');
+  }catch(e){showToast('Sheets: '+e.message,'err');}
+
+  btn.disabled=false; btn.textContent='💾 บันทึกรายงาน';
+  setTimeout(()=>switchNav('history'),800);
 }
 
-// ============================================================
-//  History
-// ============================================================
-function renderHistory() {
-  const container = document.getElementById('history-list');
-  if (!reports.length) {
-    container.innerHTML = '<div class="loading-text">ยังไม่มีรายงาน</div>';
-    return;
-  }
-  container.innerHTML = reports.map((r, i) => `
+// ── History ────────────────────────────────────────────────
+function renderHistory(){
+  const c=document.getElementById('history-list');
+  if(!reports.length){c.innerHTML='<div class="loading-text">ยังไม่มีรายงาน</div>';return;}
+  c.innerHTML=reports.map((r,i)=>`
     <div class="inc-card" onclick="toggleInc(${i})">
       <div class="inc-hdr">
-        <div class="inc-dot" style="background:${SEV_COLOR[r.sevNum||1]}"></div>
+        <div class="inc-dot" style="background:${SC[r.sevNum]}"></div>
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:6px">
             <div class="inc-title">${r.type}</div>
-            <span class="inc-badge" style="background:${SEV_BG[r.sevNum||1]};color:${SEV_TC[r.sevNum||1]}">${r.severity}</span>
+            <span class="inc-badge" style="background:${SB[r.sevNum]};color:${ST[r.sevNum]}">${r.severity}</span>
           </div>
           <div class="inc-sub">${r.road}</div>
-          <div class="inc-meta">${r.id} · ${r.date} · ${r.time} · บาดเจ็บ ${r.injured}${r.dead ? ' · เสียชีวิต '+r.dead : ''}</div>
+          <div class="inc-meta">${r.id} · ${r.date} · ${r.time} · บาดเจ็บ ${r.injured}${r.dead?' · เสียชีวิต '+r.dead:''}</div>
         </div>
       </div>
       <div class="inc-body" id="ib-${i}">
-        ${r.drivers && r.drivers.length
-          ? r.drivers.map((d,di) => `
-              <div class="d-row">
-                <div class="dnum" style="width:18px;height:18px;font-size:10px;flex-shrink:0">${di+1}</div>
-                <span>${d.name}</span>
-                <span class="d-phone">${d.phone}</span>
-                <span class="d-plate">${d.plate}</span>
-              </div>`).join('')
-          : ''}
+        ${r.drivers&&r.drivers.length?r.drivers.map((d,di)=>`
+          <div class="d-row"><div class="dnum" style="width:18px;height:18px;font-size:10px">${di+1}</div>
+          <span>${d.name}</span><span class="d-phone">${d.phone}</span>
+          <span class="d-plate">${d.plate}</span></div>`).join(''):''}
         <div class="inc-btns">
           <button class="btn-pdf" onclick="event.stopPropagation();showPdf(${i})">📄 PDF</button>
-          <button class="btn-line" onclick="event.stopPropagation();sendLine(${i})">💬 Line</button>
-          <button class="btn-sheet" onclick="event.stopPropagation();openSheet()">📊 Sheets</button>
+          <button class="btn-line" onclick="event.stopPropagation();sendLineReport(${i})" id="line-btn-${i}">💬 แจ้งเตือน Line</button>
         </div>
       </div>
     </div>`).join('');
 }
+function toggleInc(i){document.getElementById('ib-'+i)?.classList.toggle('open');}
 
-function toggleInc(i) {
-  document.getElementById('ib-'+i)?.classList.toggle('open');
-}
-
-// ============================================================
-//  Dashboard — load from Google Sheets
-// ============================================================
-async function loadDashboard() {
-  try {
-    document.getElementById('hotspot-list').innerHTML = '<div class="loading-text">กำลังโหลด...</div>';
-    const res  = await fetch(CONFIG.SHEET_API_URL + '?action=getStats');
-    const data = await res.json();
-    if (data.status !== 'success') throw new Error(data.message);
-    renderDashboard(data.stats);
-  } catch (err) {
-    document.getElementById('hotspot-list').innerHTML =
-      `<div class="loading-text" style="color:var(--red)">โหลดข้อมูลไม่สำเร็จ: ${err.message}</div>`;
+// ── Dashboard ──────────────────────────────────────────────
+async function loadDashboard(){
+  try{
+    document.getElementById('hotspot-list').innerHTML='<div class="loading-text">กำลังโหลด...</div>';
+    const res=await fetch(CONFIG.SHEET_API_URL+'?action=getStats');
+    const d=await res.json();
+    if(d.status!=='success') throw new Error(d.message);
+    const s=d.stats;
+    document.getElementById('d-total').textContent=s.total;
+    document.getElementById('d-injured').textContent=s.totalInjured;
+    document.getElementById('d-dead').textContent=s.totalDead;
+    document.getElementById('d-severe').textContent=s.severity['รุนแรง']||0;
+    renderBars('chart-type',s.byType,['#E24B4A','#1a56db','#EF9F27','#1D9E75','#885CF7']);
+    renderBars('chart-hour',s.byHour,['#1a56db','#EF9F27','#E24B4A','#1D9E75','#885CF7']);
+    const hot=s.hotspots||[];
+    const rankCls=['r1','r2','r3'];
+    document.getElementById('hotspot-list').innerHTML=hot.length
+      ?hot.map((h,i)=>`<div class="hotspot-row">
+          <div class="hotspot-rank ${rankCls[i]||''}">${i+1}</div>
+          <div class="hotspot-name">${h.road}</div>
+          <span class="hotspot-count">${h.count} ครั้ง</span></div>`).join('')
+      :'<div class="loading-text">ยังไม่มีข้อมูล</div>';
+  }catch(e){
+    document.getElementById('hotspot-list').innerHTML='<div class="loading-text" style="color:var(--red)">โหลดไม่สำเร็จ: '+e.message+'</div>';
   }
 }
 
-function renderDashboard(stats) {
-  document.getElementById('d-total').textContent   = stats.total;
-  document.getElementById('d-injured').textContent = stats.totalInjured;
-  document.getElementById('d-dead').textContent    = stats.totalDead;
-  document.getElementById('d-severe').textContent  = stats.severity['รุนแรง'] || 0;
-  const sevPct = stats.total ? Math.round((stats.severity['รุนแรง']||0)/stats.total*100) : 0;
-  document.getElementById('d-severe-pct').textContent = sevPct + '%';
-  document.getElementById('d-severe-pct').className   = 'metric-badge badge-r';
-
-  // chart by type
-  renderBarChart('chart-type', stats.byType,
-    ['#E24B4A','#1a56db','#EF9F27','#1D9E75','#885CF7','#0F9D58']);
-
-  // chart by hour
-  renderBarChart('chart-hour', stats.byHour,
-    ['#1a56db','#EF9F27','#E24B4A','#1D9E75','#885CF7','#885CF7']);
-
-  // hotspots
-  const hot = stats.hotspots || [];
-  if (!hot.length) {
-    document.getElementById('hotspot-list').innerHTML =
-      '<div class="loading-text">ยังไม่มีข้อมูลเพียงพอ</div>';
-    return;
-  }
-  const rankClass = ['r1','r2','r3'];
-  document.getElementById('hotspot-list').innerHTML = hot.map((h, i) => `
-    <div class="hotspot-row">
-      <div class="hotspot-rank ${rankClass[i]||''}">${i+1}</div>
-      <div class="hotspot-name">${h.road}</div>
-      <span class="hotspot-count">${h.count} ครั้ง</span>
-    </div>`).join('');
+function renderBars(id,obj,colors){
+  const entries=Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(!entries.length){document.getElementById(id).innerHTML='<div class="loading-text">ไม่มีข้อมูล</div>';return;}
+  const max=Math.max(...entries.map(e=>e[1]));
+  document.getElementById(id).innerHTML=entries.map(([l,v],i)=>`
+    <div class="bar-row"><div class="bar-lbl">${l}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/max*100)}%;background:${colors[i%colors.length]}">${v}</div>
+    </div></div>`).join('');
 }
 
-function renderBarChart(containerId, dataObj, colors) {
-  const entries = Object.entries(dataObj).sort((a,b) => b[1]-a[1]).slice(0,6);
-  if (!entries.length) { document.getElementById(containerId).innerHTML = '<div class="loading-text">ไม่มีข้อมูล</div>'; return; }
-  const max = Math.max(...entries.map(e => e[1]));
-  document.getElementById(containerId).innerHTML = entries.map(([label, val], i) => `
-    <div class="bar-row">
-      <div class="bar-lbl">${label}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/max*100)}%;background:${colors[i%colors.length]}">${val}</div></div>
-    </div>`).join('');
-}
+// ── PDF ────────────────────────────────────────────────────
+function showPdf(i){
+  const r=reports[i];
+  const st=document.getElementById('pdf-station').value||station||'สถานีตำรวจ';
+  const of=document.getElementById('pdf-officer').value||officer||'เจ้าหน้าที่ผู้รายงาน';
+  const dHTML=r.drivers&&r.drivers.length?r.drivers.map((d,di)=>`
+    <div class="pdf-driver">
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">ผู้ขับขี่คนที่ ${di+1}</div>
+      <div class="pdf-row"><span class="pdf-lbl">ชื่อ-นามสกุล</span><span class="pdf-val">${d.name}</span></div>
+      <div class="pdf-row"><span class="pdf-lbl">โทรศัพท์</span><span class="pdf-val">${d.phone}</span></div>
+      <div class="pdf-row"><span class="pdf-lbl">ทะเบียนรถ</span><span class="pdf-val" style="font-family:monospace">${d.plate}</span></div>
+    </div>`).join(''):'<p style="font-size:12px;color:var(--muted)">ไม่มีข้อมูลผู้ขับขี่</p>';
 
-function openSheet() {
-  window.open(`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/edit`, '_blank');
-}
-
-// ============================================================
-//  PDF
-// ============================================================
-function showPdf(i) {
-  const r  = reports[i];
-  const st = document.getElementById('pdf-station').value || station || 'หน่วยงานผู้รายงาน';
-  const of = document.getElementById('pdf-officer').value || officer || 'เจ้าหน้าที่ผู้รายงาน';
-  const driverHTML = r.drivers && r.drivers.length
-    ? r.drivers.map((d, di) => `
-        <div class="pdf-driver">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">ผู้ขับขี่คนที่ ${di+1}</div>
-          <div class="pdf-row"><span class="pdf-lbl">ชื่อ-นามสกุล</span><span class="pdf-val">${d.name}</span></div>
-          <div class="pdf-row"><span class="pdf-lbl">โทรศัพท์</span><span class="pdf-val">${d.phone}</span></div>
-          <div class="pdf-row"><span class="pdf-lbl">ทะเบียนรถ</span><span class="pdf-val" style="font-family:monospace">${d.plate}</span></div>
-        </div>`).join('')
-    : '<p style="font-size:12px;color:var(--muted)">ไม่มีข้อมูลผู้ขับขี่</p>';
-
-  document.getElementById('pdf-content').innerHTML = `
+  document.getElementById('pdf-content').innerHTML=`
     <div class="pdf-header">
       <div style="font-size:11px;color:var(--muted)">${st}</div>
       <h1>ใบรายงานอุบัติเหตุจราจร</h1>
       <p>รายงานโดย: ${of}</p>
-      <div class="pdf-id">${r.id} · พิมพ์เมื่อ ${new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'long',year:'numeric'})} ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.</div>
+      <div class="pdf-id">${r.id} · ${new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'long',year:'numeric'})} ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.</div>
     </div>
-    <div class="pdf-sec">
-      <div class="pdf-sec-title">ข้อมูลอุบัติเหตุ</div>
+    <div class="pdf-sec"><div class="pdf-sec-title">ข้อมูลอุบัติเหตุ</div>
       <div class="pdf-row"><span class="pdf-lbl">วันที่</span><span class="pdf-val">${r.date}</span></div>
       <div class="pdf-row"><span class="pdf-lbl">เวลา</span><span class="pdf-val">${r.time} น.</span></div>
       <div class="pdf-row"><span class="pdf-lbl">สถานที่</span><span class="pdf-val">${r.road}</span></div>
       <div class="pdf-row"><span class="pdf-lbl">พิกัด GPS</span><span class="pdf-val" style="font-size:11px;font-family:monospace">${r.gps||'ไม่ระบุ'}</span></div>
       <div class="pdf-row"><span class="pdf-lbl">ประเภท</span><span class="pdf-val">${r.type}</span></div>
-      <div class="pdf-row"><span class="pdf-lbl">ความรุนแรง</span><span class="pdf-val"><span class="pdf-sev" style="background:${SEV_BG[r.sevNum||1]};color:${SEV_TC[r.sevNum||1]}">${r.severity}</span></span></div>
+      <div class="pdf-row"><span class="pdf-lbl">ความรุนแรง</span><span class="pdf-val"><span style="background:${SB[r.sevNum]};color:${ST[r.sevNum]};padding:2px 8px;border-radius:10px;font-size:11px">${r.severity}</span></span></div>
       <div class="pdf-row"><span class="pdf-lbl">ผู้บาดเจ็บ</span><span class="pdf-val">${r.injured} คน</span></div>
       <div class="pdf-row"><span class="pdf-lbl">ผู้เสียชีวิต</span><span class="pdf-val">${r.dead} คน</span></div>
-      ${r.detail ? `<div class="pdf-row"><span class="pdf-lbl">รายละเอียด</span><span class="pdf-val">${r.detail}</span></div>` : ''}
+      ${r.detail?`<div class="pdf-row"><span class="pdf-lbl">รายละเอียด</span><span class="pdf-val">${r.detail}</span></div>`:''}
     </div>
-    <div class="pdf-sec">
-      <div class="pdf-sec-title">ข้อมูลผู้ขับขี่และยานพาหนะ</div>
-      ${driverHTML}
-    </div>
+    <div class="pdf-sec"><div class="pdf-sec-title">ข้อมูลผู้ขับขี่และยานพาหนะ</div>${dHTML}</div>
     <div class="sig-row">
-      <div><div class="sig-line">${of}</div><div style="color:var(--muted);margin-top:2px;font-size:11px">ลายมือชื่อเจ้าหน้าที่</div></div>
-      <div><div class="sig-line">................................</div><div style="color:var(--muted);margin-top:2px;font-size:11px">ลายมือชื่อผู้บังคับบัญชา</div></div>
+      <div><div class="sig-line">${of}</div><div style="color:var(--muted);font-size:11px;margin-top:2px">ลายมือชื่อเจ้าหน้าที่</div></div>
+      <div><div class="sig-line">................................</div><div style="color:var(--muted);font-size:11px;margin-top:2px">ลายมือชื่อผู้บังคับบัญชา</div></div>
     </div>
     <button class="print-btn" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>`;
   document.getElementById('pdf-overlay').classList.add('show');
 }
-function closePdf() { document.getElementById('pdf-overlay').classList.remove('show'); }
-function closePdfOutside(e) { if (e.target.id === 'pdf-overlay') closePdf(); }
+function closePdf(){document.getElementById('pdf-overlay').classList.remove('show');}
+function closePdfOutside(e){if(e.target.id==='pdf-overlay')closePdf();}
 
-// ============================================================
-//  Line Messaging API
-// ============================================================
-async function sendLine(i) {
-  if (!lineToken || !lineTarget) { showToast('ตั้งค่า Line ก่อนใช้งาน', 'err'); return; }
-  const r = reports[i];
-  const emoji = {1:'🔴',2:'🟡',3:'🟢'};
-  const driversText = r.drivers && r.drivers.length
-    ? r.drivers.map((d,di) => `  ${di+1}. ${d.name} | ${d.phone} | ทะเบียน ${d.plate}`).join('\n')
-    : '  ไม่มีข้อมูลผู้ขับขี่';
-
-  const msg = `${emoji[r.sevNum||1]} แจ้งเตือนอุบัติเหตุ [${r.id}]
-━━━━━━━━━━━━━━━━
-📍 สถานที่: ${r.road}
-🕐 เวลา: ${r.date} ${r.time} น.
-🚗 ประเภท: ${r.type}
-⚠️ ความรุนแรง: ${r.severity}
-🤕 บาดเจ็บ: ${r.injured} | เสียชีวิต: ${r.dead}
-━━━━━━━━━━━━━━━━
+// ── Line (ส่งผ่าน Apps Script เพื่อหลีกเลี่ยง CORS) ──────
+async function sendLineReport(i){
+  if(!lineToken||!lineTarget){showToast('กรุณาตั้งค่า Line ก่อน','err');return;}
+  const btn=document.getElementById('line-btn-'+i);
+  if(btn){btn.disabled=true;btn.textContent='กำลังส่ง...';}
+  const r=reports[i];
+  const emoji={1:'🔴',2:'🟡',3:'🟢'};
+  const driversText=r.drivers&&r.drivers.length
+    ?r.drivers.map((d,di)=>`  ${di+1}. ${d.name} | ${d.phone} | ทะเบียน ${d.plate}`).join('\n')
+    :'  ไม่มีข้อมูลผู้ขับขี่';
+  const msg=`${emoji[r.sevNum||1]} แจ้งเตือนอุบัติเหตุ [${r.id}]
+━━━━━━━━━━━━━━━
+📍 ${r.road}
+🕐 ${r.date} ${r.time} น.
+🚗 ${r.type}
+⚠️ ${r.severity}
+🤕 บาดเจ็บ ${r.injured} | เสียชีวิต ${r.dead}
+━━━━━━━━━━━━━━━
 👤 ผู้ขับขี่:
 ${driversText}
-━━━━━━━━━━━━━━━━
-📌 GPS: ${r.gps || 'ไม่ระบุ'}
-📋 รายงานโดย: ${r.officer || officer}`;
-
-  await sendLineMsg(msg);
+━━━━━━━━━━━━━━━
+📌 GPS: ${r.gps||'ไม่ระบุ'}
+📋 รายงานโดย: ${r.officer||officer}`;
+  await sendLineViaScript(msg);
+  if(btn){btn.disabled=false;btn.textContent='💬 แจ้งเตือน Line';}
 }
 
-async function testLine() {
-  if (!lineToken || !lineTarget) { showToast('กรุณาบันทึกการตั้งค่าก่อน', 'err'); return; }
-  await sendLineMsg('🚔 ทดสอบระบบแจ้งเตือน\nระบบจราจรภาคสนาม เชื่อมต่อสำเร็จ ✓');
+async function testLine(){
+  if(!lineToken||!lineTarget){showToast('กรุณาบันทึกการตั้งค่าก่อน','err');return;}
+  await sendLineViaScript('🚔 ทดสอบระบบแจ้งเตือน\nระบบจราจรภาคสนาม เชื่อมต่อสำเร็จ ✓');
 }
 
-async function sendLineMsg(text) {
-  showToast('กำลังส่ง Line...');
-  try {
-    const res = await fetch(CONFIG.SHEET_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'sendLine',
-        token:  lineToken,
-        target: lineTarget,
-        text:   text
+// ──────────────────────────────────────────────────────────
+//  sendLineViaScript
+//  ส่งข้อความ Line โดยผ่าน Google Apps Script เป็นตัวกลาง
+//  แก้ปัญหา CORS ที่ Browser บล็อกการเรียก Line API โดยตรง
+// ──────────────────────────────────────────────────────────
+async function sendLineViaScript(text){
+  showToast('กำลังส่งแจ้งเตือน Line...');
+  try{
+    const res=await fetch(CONFIG.SHEET_API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        action:'sendLine',
+        token:lineToken,
+        target:lineTarget,
+        text:text
       })
     });
-    const data = await res.json();
-    if (data.status === 'success') {
-      showToast('ส่ง Line สำเร็จ ✓', 'ok');
-    } else {
-      showToast('Line Error: ' + JSON.stringify(data.line), 'err');
+    const d=await res.json();
+    if(d.status==='success'){
+      showToast('ส่ง Line สำเร็จ ✓','ok');
+    }else{
+      showToast('Line Error: '+d.message,'err');
     }
-  } catch (err) {
-    showToast('Error: ' + err.message, 'err');
+  }catch(e){
+    showToast('เชื่อมต่อ Apps Script ไม่ได้: '+e.message,'err');
   }
 }
 
-// ============================================================
-//  Google Sheets test
-// ============================================================
-async function testSheet() {
-  showToast('กำลังทดสอบ Sheets...');
-  try {
-    const res  = await fetch(CONFIG.SHEET_API_URL + '?action=getStats');
-    const data = await res.json();
-    if (data.status === 'success') {
-      document.getElementById('sheet-dot').className = 'sdot ok';
-      document.getElementById('sheet-status').textContent = 'เชื่อมต่อสำเร็จ — มีข้อมูล ' + data.stats.total + ' รายการ';
-      showToast('Sheets เชื่อมต่อสำเร็จ ✓', 'ok');
-    } else {
-      throw new Error(data.message);
-    }
-  } catch (err) {
-    showToast('Sheets: ' + err.message, 'err');
+// ── Settings ───────────────────────────────────────────────
+function saveSettings(){
+  lineToken =document.getElementById('line-token').value.trim();
+  lineTarget=document.getElementById('line-target').value.trim();
+  station   =document.getElementById('pdf-station').value.trim();
+  officer   =document.getElementById('pdf-officer').value.trim();
+  localStorage.setItem('tfs',JSON.stringify({lineToken,lineTarget,station,officer}));
+  if(lineToken&&lineTarget){
+    document.getElementById('line-dot').className='sdot ok';
+    document.getElementById('line-status').textContent='ตั้งค่าแล้ว — พร้อมส่งแจ้งเตือน';
   }
+  showToast('บันทึกการตั้งค่าสำเร็จ ✓','ok');
 }
 
-// ============================================================
-//  Settings — save/load from localStorage
-// ============================================================
-function saveSettings() {
-  lineToken = document.getElementById('line-token').value.trim();
-  lineTarget = document.getElementById('line-target').value.trim();
-  station   = document.getElementById('pdf-station').value.trim();
-  officer   = document.getElementById('pdf-officer').value.trim();
-
-  localStorage.setItem('trafficSettings', JSON.stringify({ lineToken, lineTarget, station, officer }));
-
-  if (lineToken && lineTarget) {
-    document.getElementById('line-dot').className = 'sdot ok';
-    document.getElementById('line-status').textContent = 'ตั้งค่าแล้ว — พร้อมส่งแจ้งเตือน';
-  }
-  showToast('บันทึกการตั้งค่าสำเร็จ ✓', 'ok');
-}
-
-function loadSettings() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('trafficSettings') || '{}');
-    lineToken  = saved.lineToken  || '';
-    lineTarget = saved.lineTarget || '';
-    station    = saved.station    || '';
-    officer    = saved.officer    || '';
-
-    if (lineToken)  document.getElementById('line-token').value  = lineToken;
-    if (lineTarget) document.getElementById('line-target').value = lineTarget;
-    if (station)    document.getElementById('pdf-station').value = station;
-    if (officer)    document.getElementById('pdf-officer').value = officer;
-
-    if (lineToken && lineTarget) {
-      document.getElementById('line-dot').className = 'sdot ok';
-      document.getElementById('line-status').textContent = 'ตั้งค่าแล้ว — พร้อมส่งแจ้งเตือน';
+function loadSettings(){
+  try{
+    const s=JSON.parse(localStorage.getItem('tfs')||'{}');
+    lineToken =s.lineToken ||''; lineTarget=s.lineTarget||'';
+    station   =s.station   ||''; officer   =s.officer   ||'';
+    if(lineToken) document.getElementById('line-token').value=lineToken;
+    if(lineTarget)document.getElementById('line-target').value=lineTarget;
+    if(station)   document.getElementById('pdf-station').value=station;
+    if(officer)   document.getElementById('pdf-officer').value=officer;
+    if(lineToken&&lineTarget){
+      document.getElementById('line-dot').className='sdot ok';
+      document.getElementById('line-status').textContent='ตั้งค่าแล้ว — พร้อมส่งแจ้งเตือน';
     }
-  } catch(e) {}
+  }catch(e){}
 }
 
-// ============================================================
-//  Navigation
-// ============================================================
-function switchTab(t) {
-  const tabs  = ['report','history','dashboard','settings'];
-  document.querySelectorAll('.tab').forEach((b,i)  => b.classList.toggle('active', tabs[i]===t));
-  document.querySelectorAll('.panel').forEach(p     => p.classList.toggle('active', p.id==='panel-'+t));
-  if (t === 'dashboard') loadDashboard();
+async function testSheet(){
+  showToast('กำลังทดสอบ...');
+  try{
+    const res=await fetch(CONFIG.SHEET_API_URL+'?action=ping');
+    const d=await res.json();
+    if(d.status==='success'){
+      document.getElementById('sheet-dot').className='sdot ok';
+      document.getElementById('sheet-status').textContent='เชื่อมต่อ Apps Script สำเร็จ ✓';
+      showToast('Apps Script เชื่อมต่อสำเร็จ ✓','ok');
+    }else throw new Error(d.message);
+  }catch(e){showToast('Error: '+e.message,'err');}
 }
-function switchNav(t) {
+
+// ── Nav ────────────────────────────────────────────────────
+function switchTab(t){
+  const tabs=['report','history','dashboard','settings'];
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',tabs[i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+t));
+  if(t==='dashboard')loadDashboard();
+}
+function switchNav(t){
   switchTab(t);
-  const tabs = ['report','history','dashboard','settings'];
-  document.querySelectorAll('.nbtn').forEach((b,i) => b.classList.toggle('active', tabs[i]===t));
+  const tabs=['report','history','dashboard','settings'];
+  document.querySelectorAll('.nbtn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===t));
 }
 
-// ============================================================
-//  Toast
-// ============================================================
-function showToast(msg, type='') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className   = 'toast show' + (type ? ' '+type : '');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.className = 'toast', 2800);
+// ── Toast ──────────────────────────────────────────────────
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='toast show'+(type?' '+type:'');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.className='toast',3000);
 }
 </script>
 </body>
