@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -146,7 +145,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 //  SHEET_ID      = ID ของ Google Sheets (จาก URL)
 // ============================================================
 const CONFIG = {
-  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbwZvbkkLB4hB1UTM32G5VPJJFczxbqinCNmzrSwwNo2NoqoH9YBG9aQfcTDEF6tf02j/exec',
+  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbwnW0OeSUhsVLZQLKvwLOhnWi5ZjJj6W5Tv6r99dP3MdZQ7UOIrjIBQo1wcpI2A0oyB/exec',
   SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
 };
 </script>
@@ -475,7 +474,55 @@ function handlePhotoSelect(input){
     reader.readAsDataURL(file);
   });
   input.value = '';
-  showToast('เพิ่มรูปภาพ '+files.length+' รูป','ok');
+  showToast('เพิ่มรูปภาพ '+files.length+' รูป (จะอัปโหลดเมื่อบันทึก)','ok');
+}
+
+// ── Photos: อัปโหลดไป Google Drive ─────────────────────────
+function fileToBase64(file){
+  return new Promise(function(resolve,reject){
+    var reader=new FileReader();
+    reader.onload=function(e){resolve(e.target.result.split(',')[1]);};
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadAllPhotos(reportId){
+  var validFiles=photoFiles.filter(Boolean);
+  if(!validFiles.length) return [];
+  var results=[];
+  for(var i=0;i<validFiles.length;i++){
+    var file=validFiles[i];
+    showToast('อัปโหลดรูปที่ '+(i+1)+'/'+validFiles.length+'...');
+    try{
+      var base64=await fileToBase64(file);
+      var d=await callScript({
+        action:'uploadPhoto',
+        reportId:reportId,
+        fileName:file.name||('photo_'+(i+1)+'.jpg'),
+        mimeType:file.type||'image/jpeg',
+        base64:base64
+      });
+      if(d.status==='success') results.push(d);
+    }catch(e){console.error('upload err:',e);}
+  }
+  return results;
+}
+
+async function requestPDF(i){
+  var r=reports[i];
+  var st=document.getElementById('pdf-station').value||station||'สถานีตำรวจ';
+  var of=document.getElementById('pdf-officer').value||officer||'เจ้าหน้าที่';
+  showToast('กำลังสร้าง PDF... (ใช้เวลา 10-20 วิ)');
+  try{
+    var d=await callScript({action:'generatePDF',station:st,officer:of,report:r});
+    if(d.status==='success'){
+      showToast('สร้าง PDF สำเร็จ ✓','ok');
+      setTimeout(function(){window.open(d.viewUrl,'_blank');},500);
+    }else{
+      showToast('PDF Error: '+d.message,'err');
+    }
+  }catch(e){showToast('PDF Error: '+e.message,'err');}
 }
 
 // ── Submit ─────────────────────────────────────────────────
@@ -486,8 +533,16 @@ async function submitReport(){
 
   const now=new Date();
   const id='RPT-'+String(reportCounter++).padStart(4,'0');
+
+  // อัปโหลดรูปไป Google Drive ก่อน (ถ้ามี)
+  var uploadedPhotos=[];
+  if(photoFiles.filter(Boolean).length>0){
+    uploadedPhotos=await uploadAllPhotos(id);
+    if(uploadedPhotos.length) showToast('อัปโหลดรูป '+uploadedPhotos.length+' รูปสำเร็จ','ok');
+  }
+
   const r={
-    id, sevNum:currentSev,
+    id, sevNum:currentSev, photos:uploadedPhotos,
     date:now.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}),
     time:now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}),
     road:document.getElementById('road-input').value||'ไม่ระบุสถานที่',
@@ -539,7 +594,7 @@ function renderHistory(){
           <span>${d.name}</span><span class="d-phone">${d.phone}</span>
           <span class="d-plate">${d.plate}</span></div>`).join(''):''}
         <div class="inc-btns">
-          <button class="btn-pdf" onclick="event.stopPropagation();showPdf(${i})">📄 PDF</button>
+          <button class="btn-pdf" onclick="event.stopPropagation();requestPDF(${i})">📄 PDF</button>
           <button class="btn-line" onclick="event.stopPropagation();sendLineReport(${i})" id="line-btn-${i}">💬 แจ้งเตือน Line</button>
         </div>
       </div>
