@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -471,11 +472,11 @@ function setSev(n){
 }
 
 // ── Drivers ────────────────────────────────────────────────
-function addDriver(name='',phone='',plate='',province=''){
+function addDriver(name='',phone='',plate='',province='',vtype=''){
   driverCount++;
   const n=driverCount, div=document.createElement('div');
   div.className='driver-card'; div.id='dc-'+n;
-  div.innerHTML=`<div class="driver-head"><div class="dnum">${n}</div>ผู้ขับขี่คนที่ ${n}
+  div.innerHTML=`<div class="driver-head"><div class="dnum">${n}</div>ผู้ขับขี่ / ยานพาหนะคันที่ ${n}
     <span onclick="removeDriver(${n})" style="margin-left:auto;cursor:pointer;font-size:20px;color:var(--muted);line-height:1">×</span></div>
     <div class="field" style="margin-bottom:10px"><label>ชื่อ-นามสกุล</label>
       <input type="text" id="dn-${n}" placeholder="สมชาย ใจดี" value="${name}"></div>
@@ -486,23 +487,22 @@ function addDriver(name='',phone='',plate='',province=''){
         <input type="text" id="dl-${n}" placeholder="กข 1234" maxlength="12" value="${plate}"
           style="text-transform:uppercase;font-family:monospace;font-weight:700;font-size:14px;letter-spacing:.05em"></div>
     </div>
-    <div class="field" style="margin:0"><label>จังหวัด (ทะเบียนรถ)</label>
-      <select id="dv-${n}" style="font-size:13px">
-        <option value="">-- เลือกจังหวัด --</option>
-        <option ${province==='ชลบุรี'?'selected':''}>ชลบุรี</option>
-        <option ${province==='กรุงเทพมหานคร'?'selected':''}>กรุงเทพมหานคร</option>
-        <option ${province==='ระยอง'?'selected':''}>ระยอง</option>
-        <option ${province==='จันทบุรี'?'selected':''}>จันทบุรี</option>
-        <option ${province==='ตราด'?'selected':''}>ตราด</option>
-        <option ${province==='ฉะเชิงเทรา'?'selected':''}>ฉะเชิงเทรา</option>
-        <option ${province==='นครราชสีมา'?'selected':''}>นครราชสีมา</option>
-        <option ${province==='ปราจีนบุรี'?'selected':''}>ปราจีนบุรี</option>
-        <option ${province==='สระแก้ว'?'selected':''}>สระแก้ว</option>
-        <option ${province==='นนทบุรี'?'selected':''}>นนทบุรี</option>
-        <option ${province==='ปทุมธานี'?'selected':''}>ปทุมธานี</option>
-        <option ${province==='สมุทรปราการ'?'selected':''}>สมุทรปราการ</option>
-        <option value="อื่นๆ" ${province==='อื่นๆ'?'selected':''}>อื่นๆ (ระบุในหมายเหตุ)</option>
-      </select></div>`;
+    <div class="two-col" style="margin-bottom:0">
+      <div class="field" style="margin:0"><label>จังหวัด (ทะเบียนรถ)</label>
+        <input type="text" id="dv-${n}" placeholder="เช่น ชลบุรี" value="${province}"
+          style="font-size:13px"></div>
+      <div class="field" style="margin:0"><label>ประเภทรถ</label>
+        <select id="dt-${n}" style="font-size:13px">
+          <option value="">-- เลือก --</option>
+          <option ${vtype==='รถยนต์กระบะ'?'selected':''}>รถยนต์กระบะ</option>
+          <option ${vtype==='รถยนต์เก๋ง'?'selected':''}>รถยนต์เก๋ง</option>
+          <option ${vtype==='รถบรรทุก'?'selected':''}>รถบรรทุก</option>
+          <option ${vtype==='รถบรรทุกพ่วง'?'selected':''}>รถบรรทุกพ่วง</option>
+          <option ${vtype==='รถจักรยานยนต์'?'selected':''}>รถจักรยานยนต์</option>
+          <option ${vtype==='คนเดินเท้า'?'selected':''}>คนเดินเท้า</option>
+          <option ${vtype==='อื่นๆ'?'selected':''}>อื่นๆ (ระบุในหมายเหตุ)</option>
+        </select></div>
+    </div>`;
   document.getElementById('drivers-container').appendChild(div);
 }
 function removeDriver(n){const e=document.getElementById('dc-'+n);if(e)e.remove();}
@@ -510,14 +510,16 @@ function removeDriver(n){const e=document.getElementById('dc-'+n);if(e)e.remove(
 function collectDrivers(){
   const d=[];
   document.querySelectorAll('[id^="dn-"]').forEach(el=>{
-    const n=el.id.split('-')[1];
+    const n        = el.id.split('-')[1];
     const plate    = (document.getElementById('dl-'+n).value||'-').toUpperCase();
-    const province = document.getElementById('dv-'+n) ? document.getElementById('dv-'+n).value : '';
+    const province = document.getElementById('dv-'+n) ? document.getElementById('dv-'+n).value.trim() : '';
+    const vtype    = document.getElementById('dt-'+n) ? document.getElementById('dt-'+n).value : '';
     const plateStr = plate + (province ? ' ('+province+')' : '');
     d.push({
       name:  el.value||'ไม่ระบุ',
       phone: document.getElementById('dp-'+n).value||'-',
-      plate: plateStr
+      plate: plateStr,
+      vtype: vtype
     });
   });
   return d;
@@ -587,21 +589,6 @@ async function uploadAllPhotos(reportId){
   return results;
 }
 
-async function requestPDF(i){
-  var r=reports[i];
-  var st=document.getElementById('pdf-station').value||station||'สถานีตำรวจ';
-  var of=document.getElementById('pdf-officer').value||officer||'เจ้าหน้าที่';
-  showToast('กำลังสร้าง PDF... (ใช้เวลา 10-20 วิ)');
-  try{
-    var d=await callScript({action:'generatePDF',station:st,officer:of,report:r});
-    if(d.status==='success'){
-      showToast('สร้าง PDF สำเร็จ ✓','ok');
-      setTimeout(function(){window.open(d.viewUrl,'_blank');},500);
-    }else{
-      showToast('PDF Error: '+d.message,'err');
-    }
-  }catch(e){showToast('PDF Error: '+e.message,'err');}
-}
 
 // ── Submit ─────────────────────────────────────────────────
 async function submitReport(){
@@ -673,8 +660,7 @@ function renderHistory(){
           <span>${d.name}</span><span class="d-phone">${d.phone}</span>
           <span class="d-plate">${d.plate}</span></div>`).join(''):''}
         <div class="inc-btns">
-          <button class="btn-pdf" onclick="event.stopPropagation();requestPDF(${i})">📄 PDF</button>
-          <button class="btn-line" onclick="event.stopPropagation();sendLineReport(${i})" id="line-btn-${i}">💬 แจ้งเตือน Line</button>
+          <button class="btn-line" onclick="event.stopPropagation();sendLineReport(${i})" id="line-btn-${i}" style="flex:1">💬 แจ้งเตือน Line</button>
         </div>
       </div>
     </div>`).join('');
@@ -767,15 +753,15 @@ async function sendLineReport(i){
   const r=reports[i];
   const emoji={1:'🔴',2:'🟡',3:'🟢'};
   const driversText=r.drivers&&r.drivers.length
-    ?r.drivers.map((d,di)=>`  ${di+1}. ${d.name} | ${d.phone} | ทะเบียน ${d.plate}`).join('\n')
+    ?r.drivers.map((d,di)=>`  ${di+1}. ${d.name} | ${d.phone} | ทะเบียน ${d.plate}${d.vtype?' | '+d.vtype:''}`).join('\n')
     :'  ไม่มีข้อมูลผู้ขับขี่';
   const msg=`${emoji[r.sevNum||1]} แจ้งเตือนอุบัติเหตุ [${r.id}]
 ━━━━━━━━━━━━━━━
-📍 ${r.road}
-🕐 ${r.date} ${r.time} น.
-🚗 ${r.type}
-⚠️ ${r.severity}
-🤕 บาดเจ็บ ${r.injured} | เสียชีวิต ${r.dead}
+📍 ถนน/เส้นทาง: ${r.road}${r.tambon?' ต.'+r.tambon:''}
+🕐 วันที่/เวลา: ${r.date} ${r.time} น.
+🚗 ประเภทอุบัติเหตุ: ${r.type}
+⚠️ ระดับความรุนแรง: ${r.severity}
+🤕 บาดเจ็บ ${r.injured} คน | เสียชีวิต ${r.dead} คน
 ━━━━━━━━━━━━━━━
 👤 ผู้ขับขี่:
 ${driversText}
