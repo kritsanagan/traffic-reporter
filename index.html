@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>ระบบจราจรภาคสนาม</title>
+<title>ระบบบันทึกข้อมูลอุบัติเหตุ สภ.เมืองชลบุรี</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -146,14 +145,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 //  SHEET_ID      = ID ของ Google Sheets (จาก URL)
 // ============================================================
 const CONFIG = {
-  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbyOjEnGcc-12WvmTv9lSKkttfq9VepbagjYIqdsA7z7wOPhqV2dWvGcKsRuomISoaUz/exec',
+  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycby-BymeFsv8FOGMFni7zZw4obV-amCuLE6WAiCW2wD0n21027NuLW41RlH6O27esUz5/exec
+',
   SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
 };
 </script>
 
 <div class="app">
   <div class="topbar">
-    <div class="topbar-t">🚔 ระบบจราจรภาคสนาม</div>
+    <div class="topbar-t">🚔 ระบบบันทึกข้อมูลอุบัติเหตุ สภ.เมืองชลบุรี</div>
     <div class="topbar-s" id="datetime">กำลังโหลด...</div>
   </div>
   <div class="tabs">
@@ -215,9 +215,9 @@ const CONFIG = {
       <div class="field" style="margin:0"><label>ผู้เสียชีวิต (คน)</label>
         <input type="number" min="0" id="dead" placeholder="0" style="text-align:center"></div>
     </div>
-    <div class="slabel">ข้อมูลผู้ขับขี่และยานพาหนะ</div>
+    <div class="slabel">ข้อมูลคู่กรณีและยานพาหนะ</div>
     <div id="drivers-container"></div>
-    <button class="add-driver" onclick="addDriver()">+ เพิ่มผู้ขับขี่ / ยานพาหนะ</button>
+    <button class="add-driver" onclick="addDriver()">+ เพิ่มคู่กรณี</button>
     <div class="slabel">ภาพถ่ายหลักฐาน</div>
     <input type="file" id="photo-input" accept="image/*" multiple
       style="display:none" onchange="handlePhotoSelect(this)">
@@ -367,7 +367,7 @@ async function loadReportsFromSheet(){
       const sevMap={'รุนแรง':1,'ปานกลาง':2,'เล็กน้อย':3};
       reports = d.reports.map(function(r){
         // แปลงข้อมูลผู้ขับขี่ รองรับทั้ง | และรูปแบบ "ชื่อ: ... โทร: ... ทะเบียน: ..."
-        const driverRaw = r['ข้อมูลผู้ขับขี่']||'';
+        const driverRaw = r['ข้อมูลคู่กรณี']||'';
         const drivers = driverRaw.split(/[;\n]/).filter(Boolean).map(function(s){
           s = s.trim();
           if (s.indexOf('|') > -1) {
@@ -383,29 +383,20 @@ async function loadReportsFromSheet(){
         const sev = r['ความรุนแรง']||'';
         // ทำความสะอาดวันที่ — ถ้าเป็น ISO timestamp ให้แปลงให้ถูก
         function cleanDate(v) {
+          // รับค่าจาก Code.gs เป็น "dd/MM/yyyy HH:mm" หรือ "dd/MM/yyyy"
           if (!v) return '';
-          var s = String(v);
-          // ถ้าเป็น dd/mm/yyyy format แล้ว return เลย
+          var s = String(v).trim();
+          // ถ้าเป็น "dd/MM/yyyy..." เอา 10 ตัวแรก
           if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) return s.substring(0,10);
-          // ถ้าเป็น ISO หรือ timestamp
-          try {
-            var d = new Date(s);
-            if (!isNaN(d.getTime())) {
-              return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
-            }
-          } catch(e){}
-          return s.substring(0,10);
+          return s;
         }
         function cleanTime(v) {
           if (!v) return '';
-          var s = String(v);
+          var s = String(v).trim();
+          // ถ้าเป็น "HH:mm" โดยตรง
           if (/^\d{2}:\d{2}/.test(s)) return s.substring(0,5);
-          try {
-            var d = new Date(s);
-            if (!isNaN(d.getTime())) {
-              return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
-            }
-          } catch(e){}
+          // ถ้าเป็น "dd/MM/yyyy HH:mm" เอาส่วน HH:mm
+          if (s.length >= 16 && s.indexOf(' ') > -1) return s.split(' ')[1].substring(0,5);
           return s;
         }
         return {
@@ -476,7 +467,7 @@ function addDriver(name='',phone='',plate='',province='',vtype=''){
   driverCount++;
   const n=driverCount, div=document.createElement('div');
   div.className='driver-card'; div.id='dc-'+n;
-  div.innerHTML=`<div class="driver-head"><div class="dnum">${n}</div>ผู้ขับขี่ / ยานพาหนะคันที่ ${n}
+  div.innerHTML=`<div class="driver-head"><div class="dnum">${n}</div>คู่กรณีที่ ${n}
     <span onclick="removeDriver(${n})" style="margin-left:auto;cursor:pointer;font-size:20px;color:var(--muted);line-height:1">×</span></div>
     <div class="field" style="margin-bottom:10px"><label>ชื่อ-นามสกุล</label>
       <input type="text" id="dn-${n}" placeholder="สมชาย ใจดี" value="${name}"></div>
@@ -499,6 +490,7 @@ function addDriver(name='',phone='',plate='',province='',vtype=''){
           <option ${vtype==='รถบรรทุก'?'selected':''}>รถบรรทุก</option>
           <option ${vtype==='รถบรรทุกพ่วง'?'selected':''}>รถบรรทุกพ่วง</option>
           <option ${vtype==='รถจักรยานยนต์'?'selected':''}>รถจักรยานยนต์</option>
+          <option ${vtype==='รถจักรยาน'?'selected':''}>รถจักรยาน</option>
           <option ${vtype==='คนเดินเท้า'?'selected':''}>คนเดินเท้า</option>
           <option ${vtype==='อื่นๆ'?'selected':''}>อื่นๆ (ระบุในหมายเหตุ)</option>
         </select></div>
@@ -710,7 +702,7 @@ function showPdf(i){
   const of=document.getElementById('pdf-officer').value||officer||'เจ้าหน้าที่ผู้รายงาน';
   const dHTML=r.drivers&&r.drivers.length?r.drivers.map((d,di)=>`
     <div class="pdf-driver">
-      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">ผู้ขับขี่คนที่ ${di+1}</div>
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">คู่กรณีที่ ${di+1}</div>
       <div class="pdf-row"><span class="pdf-lbl">ชื่อ-นามสกุล</span><span class="pdf-val">${d.name}</span></div>
       <div class="pdf-row"><span class="pdf-lbl">โทรศัพท์</span><span class="pdf-val">${d.phone}</span></div>
       <div class="pdf-row"><span class="pdf-lbl">ทะเบียนรถ</span><span class="pdf-val" style="font-family:monospace">${d.plate}</span></div>
@@ -734,7 +726,7 @@ function showPdf(i){
       <div class="pdf-row"><span class="pdf-lbl">ผู้เสียชีวิต</span><span class="pdf-val">${r.dead} คน</span></div>
       ${r.detail?`<div class="pdf-row"><span class="pdf-lbl">รายละเอียด</span><span class="pdf-val">${r.detail}</span></div>`:''}
     </div>
-    <div class="pdf-sec"><div class="pdf-sec-title">ข้อมูลผู้ขับขี่และยานพาหนะ</div>${dHTML}</div>
+    <div class="pdf-sec"><div class="pdf-sec-title">ข้อมูลคู่กรณีและยานพาหนะ</div>${dHTML}</div>
     <div class="sig-row">
       <div><div class="sig-line">${of}</div><div style="color:var(--muted);font-size:11px;margin-top:2px">ลายมือชื่อเจ้าหน้าที่</div></div>
       <div><div class="sig-line">................................</div><div style="color:var(--muted);font-size:11px;margin-top:2px">ลายมือชื่อผู้บังคับบัญชา</div></div>
@@ -755,7 +747,7 @@ async function sendLineReport(i){
   const driversText=r.drivers&&r.drivers.length
     ?r.drivers.map((d,di)=>`  ${di+1}. ${d.name} | ${d.phone} | ทะเบียน ${d.plate}${d.vtype?' | '+d.vtype:''}`).join('\n')
     :'  ไม่มีข้อมูลผู้ขับขี่';
-  const msg=`${emoji[r.sevNum||1]} แจ้งเตือนอุบัติเหตุ [${r.id}]
+  const msg=`${emoji[r.sevNum||1]} รายงานอุบัติเหตุ [${r.id}]
 ━━━━━━━━━━━━━━━
 📍 ถนน/เส้นทาง: ${r.road}${r.tambon?' ต.'+r.tambon:''}
 🕐 วันที่/เวลา: ${r.date} ${r.time} น.
@@ -763,10 +755,17 @@ async function sendLineReport(i){
 ⚠️ ระดับความรุนแรง: ${r.severity}
 🤕 บาดเจ็บ ${r.injured} คน | เสียชีวิต ${r.dead} คน
 ━━━━━━━━━━━━━━━
-👤 ผู้ขับขี่:
+👤 คู่กรณี:
 ${driversText}
 ━━━━━━━━━━━━━━━
-📌 GPS: ${r.gps||'ไม่ระบุ'}${r.detail?'\n📝 รายละเอียด: '+r.detail:''}
+📌 GPS: ${r.gps||'ไม่ระบุ'}
+${(function(){
+  if(!r.gps||r.gps==='ไม่ระบุ') return '';
+  var parts=r.gps.replace(/[°NEne]/g,'').split(',');
+  if(parts.length<2) return '';
+  var lat=parts[0].trim(), lng=parts[1].trim();
+  return '🗺️ https://maps.google.com/?q='+lat+','+lng;
+})()}${r.detail?'\n📝 รายละเอียด: '+r.detail:''}
 📋 รายงานโดย: ${r.officer||officer}`;
   await sendLineViaScript(msg);
   if(btn){btn.disabled=false;btn.textContent='💬 แจ้งเตือน Line';}
@@ -774,7 +773,7 @@ ${driversText}
 
 async function testLine(){
   if(!lineToken||!lineTarget){showToast('กรุณาบันทึกการตั้งค่าก่อน','err');return;}
-  await sendLineViaScript('🚔 ทดสอบระบบแจ้งเตือน\nระบบจราจรภาคสนาม เชื่อมต่อสำเร็จ ✓');
+  await sendLineViaScript('🚔 ทดสอบระบบแจ้งเตือน\nระบบบันทึกข้อมูลอุบัติเหตุ สภ.เมืองชลบุรี เชื่อมต่อสำเร็จ ✓');
 }
 
 // ──────────────────────────────────────────────────────────
