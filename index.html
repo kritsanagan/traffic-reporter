@@ -145,7 +145,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 //  SHEET_ID      = ID ของ Google Sheets (จาก URL)
 // ============================================================
 const CONFIG = {
-  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbwPEBAN_Pde11GW1S6dUrcn1c4j4ZhR8aARMCem8TMuDwaGq_mV-VbP8CmlrmhGuVnN/exec',
+  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbyOjEnGcc-12WvmTv9lSKkttfq9VepbagjYIqdsA7z7wOPhqV2dWvGcKsRuomISoaUz/exec',
   SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
 };
 </script>
@@ -182,6 +182,21 @@ const CONFIG = {
     </div>
     <div class="field"><label>ถนน / เส้นทาง</label>
       <input type="text" id="road-input" placeholder="เช่น ถนนสุขุมวิท ช่วงซอย 21"></div>
+    <div class="field"><label>ตำบล</label>
+      <select id="tambon">
+        <option value="">-- เลือกตำบล --</option>
+        <option>บางปลาสร้อย</option>
+        <option>มะขามหย่ง</option>
+        <option>บ้านโขด</option>
+        <option>บางทราย</option>
+        <option>หนองไม้แดง</option>
+        <option>คลองตำหรุ</option>
+        <option>นาป่า</option>
+        <option>บ้านสวน</option>
+        <option>หนองรี</option>
+        <option>สำนักบก</option>
+        <option>หนองข้างคอก</option>
+      </select></div>
     <div class="field"><label>ประเภทอุบัติเหตุ</label>
       <select id="acc-type">
         <option value="">-- เลือกประเภท --</option>
@@ -194,10 +209,10 @@ const CONFIG = {
         <option>อื่นๆ</option>
       </select></div>
     <div class="two-col" style="margin-bottom:12px">
-      <div class="field" style="margin:0"><label>ผู้บาดเจ็บ</label>
-        <input type="number" min="0" value="0" id="injured" style="text-align:center"></div>
-      <div class="field" style="margin:0"><label>ผู้เสียชีวิต</label>
-        <input type="number" min="0" value="0" id="dead" style="text-align:center"></div>
+      <div class="field" style="margin:0"><label>ผู้บาดเจ็บ (คน)</label>
+        <input type="number" min="0" id="injured" placeholder="0" style="text-align:center"></div>
+      <div class="field" style="margin:0"><label>ผู้เสียชีวิต (คน)</label>
+        <input type="number" min="0" id="dead" placeholder="0" style="text-align:center"></div>
     </div>
     <div class="slabel">ข้อมูลผู้ขับขี่และยานพาหนะ</div>
     <div id="drivers-container"></div>
@@ -350,15 +365,52 @@ async function loadReportsFromSheet(){
       // แปลงข้อมูลจาก Sheets กลับเป็น format ที่แอปใช้
       const sevMap={'รุนแรง':1,'ปานกลาง':2,'เล็กน้อย':3};
       reports = d.reports.map(function(r){
-        const drivers = (r['ข้อมูลผู้ขับขี่']||'').split('; ').filter(Boolean).map(function(s){
-          const parts = s.split('|');
-          return {name:parts[0]||'',phone:parts[1]||'',plate:parts[2]||''};
+        // แปลงข้อมูลผู้ขับขี่ รองรับทั้ง | และรูปแบบ "ชื่อ: ... โทร: ... ทะเบียน: ..."
+        const driverRaw = r['ข้อมูลผู้ขับขี่']||'';
+        const drivers = driverRaw.split(/[;\n]/).filter(Boolean).map(function(s){
+          s = s.trim();
+          if (s.indexOf('|') > -1) {
+            const parts = s.split('|');
+            return {name:(parts[0]||'').trim(), phone:(parts[1]||'').trim(), plate:(parts[2]||'').trim()};
+          }
+          // รูปแบบ "ชื่อ: X  โทร: Y  ทะเบียน: Z"
+          const nm = (s.match(/ชื่อ:\s*([^โ]+)/) || [])[1]||s;
+          const ph = (s.match(/โทร:\s*(\S+)/) || [])[1]||'-';
+          const pl = (s.match(/ทะเบียน:\s*(\S+)/) || [])[1]||'-';
+          return {name:nm.trim(), phone:ph.trim(), plate:pl.trim()};
         });
         const sev = r['ความรุนแรง']||'';
+        // ทำความสะอาดวันที่ — ถ้าเป็น ISO timestamp ให้แปลงให้ถูก
+        function cleanDate(v) {
+          if (!v) return '';
+          var s = String(v);
+          // ถ้าเป็น dd/mm/yyyy format แล้ว return เลย
+          if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) return s.substring(0,10);
+          // ถ้าเป็น ISO หรือ timestamp
+          try {
+            var d = new Date(s);
+            if (!isNaN(d.getTime())) {
+              return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+            }
+          } catch(e){}
+          return s.substring(0,10);
+        }
+        function cleanTime(v) {
+          if (!v) return '';
+          var s = String(v);
+          if (/^\d{2}:\d{2}/.test(s)) return s.substring(0,5);
+          try {
+            var d = new Date(s);
+            if (!isNaN(d.getTime())) {
+              return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+            }
+          } catch(e){}
+          return s;
+        }
         return {
           id:       r['รหัสรายงาน']||'',
-          date:     r['วันที่']||'',
-          time:     r['เวลา']||'',
+          date:     cleanDate(r['วันที่']),
+          time:     cleanTime(r['เวลา']),
           road:     r['ถนน/สถานที่']||'',
           type:     r['ประเภทอุบัติเหตุ']||'',
           severity: sev,
@@ -368,6 +420,7 @@ async function loadReportsFromSheet(){
           gps:      r['พิกัด GPS']||'',
           detail:   r['รายละเอียด']||'',
           officer:  r['เจ้าหน้าที่']||'',
+          photos:   (r['ลิงก์รูปภาพ']||'').split(/[;\n]/).filter(Boolean).map(function(u){return {viewUrl:u.trim()};}),
           drivers:  drivers
         };
       });
@@ -418,7 +471,7 @@ function setSev(n){
 }
 
 // ── Drivers ────────────────────────────────────────────────
-function addDriver(name='',phone='',plate=''){
+function addDriver(name='',phone='',plate='',province=''){
   driverCount++;
   const n=driverCount, div=document.createElement('div');
   div.className='driver-card'; div.id='dc-'+n;
@@ -426,12 +479,30 @@ function addDriver(name='',phone='',plate=''){
     <span onclick="removeDriver(${n})" style="margin-left:auto;cursor:pointer;font-size:20px;color:var(--muted);line-height:1">×</span></div>
     <div class="field" style="margin-bottom:10px"><label>ชื่อ-นามสกุล</label>
       <input type="text" id="dn-${n}" placeholder="สมชาย ใจดี" value="${name}"></div>
-    <div class="two-col">
+    <div class="two-col" style="margin-bottom:10px">
       <div class="field" style="margin:0"><label>โทรศัพท์</label>
         <input type="tel" id="dp-${n}" placeholder="08X-XXX-XXXX" value="${phone}"></div>
       <div class="field" style="margin:0"><label>เลขทะเบียน</label>
-        <div class="plate-wrap"><input class="plate-inp" id="dl-${n}" placeholder="กข 1234" maxlength="12" value="${plate}">
-        <div class="plate-lbl">ทะเบียนรถ</div></div></div></div>`;
+        <input type="text" id="dl-${n}" placeholder="กข 1234" maxlength="12" value="${plate}"
+          style="text-transform:uppercase;font-family:monospace;font-weight:700;font-size:14px;letter-spacing:.05em"></div>
+    </div>
+    <div class="field" style="margin:0"><label>จังหวัด (ทะเบียนรถ)</label>
+      <select id="dv-${n}" style="font-size:13px">
+        <option value="">-- เลือกจังหวัด --</option>
+        <option ${province==='ชลบุรี'?'selected':''}>ชลบุรี</option>
+        <option ${province==='กรุงเทพมหานคร'?'selected':''}>กรุงเทพมหานคร</option>
+        <option ${province==='ระยอง'?'selected':''}>ระยอง</option>
+        <option ${province==='จันทบุรี'?'selected':''}>จันทบุรี</option>
+        <option ${province==='ตราด'?'selected':''}>ตราด</option>
+        <option ${province==='ฉะเชิงเทรา'?'selected':''}>ฉะเชิงเทรา</option>
+        <option ${province==='นครราชสีมา'?'selected':''}>นครราชสีมา</option>
+        <option ${province==='ปราจีนบุรี'?'selected':''}>ปราจีนบุรี</option>
+        <option ${province==='สระแก้ว'?'selected':''}>สระแก้ว</option>
+        <option ${province==='นนทบุรี'?'selected':''}>นนทบุรี</option>
+        <option ${province==='ปทุมธานี'?'selected':''}>ปทุมธานี</option>
+        <option ${province==='สมุทรปราการ'?'selected':''}>สมุทรปราการ</option>
+        <option value="อื่นๆ" ${province==='อื่นๆ'?'selected':''}>อื่นๆ (ระบุในหมายเหตุ)</option>
+      </select></div>`;
   document.getElementById('drivers-container').appendChild(div);
 }
 function removeDriver(n){const e=document.getElementById('dc-'+n);if(e)e.remove();}
@@ -440,7 +511,14 @@ function collectDrivers(){
   const d=[];
   document.querySelectorAll('[id^="dn-"]').forEach(el=>{
     const n=el.id.split('-')[1];
-    d.push({name:el.value||'ไม่ระบุ',phone:document.getElementById('dp-'+n).value||'-',plate:document.getElementById('dl-'+n).value||'-'});
+    const plate    = (document.getElementById('dl-'+n).value||'-').toUpperCase();
+    const province = document.getElementById('dv-'+n) ? document.getElementById('dv-'+n).value : '';
+    const plateStr = plate + (province ? ' ('+province+')' : '');
+    d.push({
+      name:  el.value||'ไม่ระบุ',
+      phone: document.getElementById('dp-'+n).value||'-',
+      plate: plateStr
+    });
   });
   return d;
 }
@@ -546,10 +624,11 @@ async function submitReport(){
     date:now.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}),
     time:now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}),
     road:document.getElementById('road-input').value||'ไม่ระบุสถานที่',
+    tambon:document.getElementById('tambon').value||'',
     type:document.getElementById('acc-type').value||'ไม่ระบุประเภท',
     severity:SL[currentSev],
-    injured:+document.getElementById('injured').value,
-    dead:+document.getElementById('dead').value,
+    injured:+(document.getElementById('injured').value||0),
+    dead:+(document.getElementById('dead').value||0),
     gps:gpsCoords,
     drivers:collectDrivers(),
     detail:document.getElementById('detail').value,
