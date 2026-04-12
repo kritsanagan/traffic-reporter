@@ -145,7 +145,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 //  SHEET_ID      = ID ของ Google Sheets (จาก URL)
 // ============================================================
 const CONFIG = {
-  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbwXegGv6eWeIYG_S3puU4h9apicqyFyK0Z6udpImHjth1vapm-5nQJI8pdbujutFM_Y/exec',
+  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbwv5V2YHjzYMeW7mGfhqgLc_0TZFDDpn3-muoVvpFmVMdmefJjlbSzsHOFBhFmU7-E/exec',
   SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
 };
 </script>
@@ -279,6 +279,8 @@ const CONFIG = {
         <input type="password" id="line-token" placeholder="วาง Channel Access Token ที่นี่"></div>
       <div class="field"><label>Group ID ห้องสั่งการ (ขึ้นต้น C...)</label>
         <input type="text" id="line-target" placeholder="Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"></div>
+      <div class="field"><label>Line User ID ของผู้รายงาน (ขึ้นต้น U...) <span style="font-size:11px;color:var(--muted)">— รับสำเนาที่ไลน์ส่วนตัว</span></label>
+        <input type="text" id="line-self" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"></div>
       <div class="status-row">
         <span class="sdot" id="line-dot"></span>
         <span style="font-size:12px;color:var(--muted);flex:1" id="line-status">ยังไม่ได้ตั้งค่า</span>
@@ -339,7 +341,7 @@ const CONFIG = {
 <script>
 // ── State ──────────────────────────────────────────────────
 let currentSev=0, photoCount=0, driverCount=0, gpsCoords='', reportCounter=1;
-let reports=[], lineToken='', lineTarget='', station='', officer='';
+let reports=[], lineToken='', lineTarget='', lineSelf='', station='', officer='';
 const SC={1:'#E24B4A',2:'#EF9F27',3:'#1D9E75'};
 const SL={1:'รุนแรง',2:'ปานกลาง',3:'เล็กน้อย'};
 const SB={1:'#FCEBEB',2:'#FAEEDA',3:'#EAF3DE'};
@@ -828,19 +830,21 @@ async function callScript(payload){
 async function sendLineViaScript(text){
   showToast('กำลังส่งแจ้งเตือน Line...');
   try{
-    const d = await callScript({
-      action : 'sendLine',
-      token  : lineToken,
-      target : lineTarget,
-      text   : text
-    });
-    if(d.status==='success'){
-      showToast('ส่ง Line สำเร็จ ✓','ok');
-    }else{
-      showToast('Line Error: '+d.message,'err');
+    // ส่งไปห้องสั่งการ (Group)
+    if(lineTarget){
+      const d=await callScript({action:'sendLine',token:lineToken,target:lineTarget,text:text});
+      if(d.status==='success'){
+        showToast('ส่ง Line Group สำเร็จ ✓','ok');
+      } else {
+        showToast('Line Error: '+d.message,'err');
+      }
+    }
+    // ส่งสำเนาไปไลน์ส่วนตัว (ถ้าตั้งค่าไว้ และไม่ใช่ ID เดียวกับ Group)
+    if(lineSelf && lineSelf !== lineTarget){
+      await callScript({action:'sendLine',token:lineToken,target:lineSelf,text:text});
     }
   }catch(e){
-    showToast('เชื่อมต่อ Apps Script ไม่ได้: '+e.message,'err');
+    showToast('Apps Script: '+e.message,'err');
   }
 }
 
@@ -848,9 +852,10 @@ async function sendLineViaScript(text){
 function saveSettings(){
   lineToken =document.getElementById('line-token').value.trim();
   lineTarget=document.getElementById('line-target').value.trim();
+  lineSelf  =document.getElementById('line-self').value.trim();
   station   =document.getElementById('pdf-station').value.trim();
   officer   =document.getElementById('pdf-officer').value.trim();
-  localStorage.setItem('tfs',JSON.stringify({lineToken,lineTarget,station,officer}));
+  localStorage.setItem('tfs',JSON.stringify({lineToken,lineTarget,lineSelf,station,officer}));
   if(lineToken&&lineTarget){
     document.getElementById('line-dot').className='sdot ok';
     document.getElementById('line-status').textContent='ตั้งค่าแล้ว — พร้อมส่งแจ้งเตือน';
@@ -862,9 +867,11 @@ function loadSettings(){
   try{
     const s=JSON.parse(localStorage.getItem('tfs')||'{}');
     lineToken =s.lineToken ||''; lineTarget=s.lineTarget||'';
+    lineSelf  =s.lineSelf  ||'';
     station   =s.station   ||''; officer   =s.officer   ||'';
     if(lineToken) document.getElementById('line-token').value=lineToken;
     if(lineTarget)document.getElementById('line-target').value=lineTarget;
+    if(lineSelf)  document.getElementById('line-self').value=lineSelf;
     if(station)   document.getElementById('pdf-station').value=station;
     if(officer)   document.getElementById('pdf-officer').value=officer;
     if(lineToken&&lineTarget){
