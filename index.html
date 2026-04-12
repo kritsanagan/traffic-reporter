@@ -146,8 +146,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 //  SHEET_ID      = ID ของ Google Sheets (จาก URL)
 // ============================================================
 const CONFIG = {
-  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbwR-GMqzcdMGPfaTdBm3VPUmO1HFdXqfXKJIxwj-PxJoliaCWxedWyNiE4Y6G4B7Imh/exec',
-  SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
+  WORKER_URL  : 'https://traffic-api.kritsanagan.workers.dev',
+  // GAS ยังใช้อยู่เฉพาะ PDF และอัปโหลดรูป
+  SHEET_API_URL : 'วาง_APPS_SCRIPT_URL_ที่นี่',
+  SHEET_ID      : 'วาง_SPREADSHEET_ID_ที่นี่',
 };
 </script>
 
@@ -364,13 +366,13 @@ window.onload=async ()=>{
 async function loadReportsFromSheet(){
   document.getElementById('history-list').innerHTML='<div class="loading-text">กำลังโหลดประวัติ...</div>';
   try{
-    const d = await callScript({action:'getAllReports'});
+    const d = await callWorker('/reports');
     if(d.status==='success' && d.reports && d.reports.length){
       // แปลงข้อมูลจาก Sheets กลับเป็น format ที่แอปใช้
       const sevMap={'รุนแรง':1,'ปานกลาง':2,'เล็กน้อย':3};
       reports = d.reports.map(function(r){
         // แปลงข้อมูลผู้ขับขี่ รองรับทั้ง | และรูปแบบ "ชื่อ: ... โทร: ... ทะเบียน: ..."
-        const driverRaw = r['ข้อมูลคู่กรณี']||'';
+        const driverRaw = r['drivers_raw'] || r['ข้อมูลคู่กรณี']||'';
         const drivers = driverRaw.split(/[;\n]/).filter(Boolean).map(function(s){
           s = s.trim();
           if (s.indexOf('|') > -1) {
@@ -383,7 +385,7 @@ async function loadReportsFromSheet(){
           const pl = (s.match(/ทะเบียน:\s*(\S+)/) || [])[1]||'-';
           return {name:nm.trim(), phone:ph.trim(), plate:pl.trim()};
         });
-        const sev = r['ความรุนแรง']||'';
+        const sev = r['ความรุนแรง']||r['severity']||'';
         // ทำความสะอาดวันที่ — ถ้าเป็น ISO timestamp ให้แปลงให้ถูก
         function cleanDate(v) {
           // รับค่าจาก Code.gs เป็น "dd/MM/yyyy HH:mm" หรือ "dd/MM/yyyy"
@@ -403,19 +405,19 @@ async function loadReportsFromSheet(){
           return s;
         }
         return {
-          id:       r['รหัสรายงาน']||'',
-          date:     cleanDate(r['วันที่']),
-          time:     cleanTime(r['เวลา']),
-          road:     r['ถนน/สถานที่']||'',
-          type:     r['ประเภทอุบัติเหตุ']||'',
+          id:       r['รหัสรายงาน']||r['id']||'',
+          date:     cleanDate(r['วันที่']||r['date']),
+          time:     cleanTime(r['เวลา']||r['time']),
+          road:     r['ถนน/สถานที่']||r['road']||'',
+          type:     r['ประเภทอุบัติเหตุ']||r['type']||'',
           severity: sev,
           sevNum:   sevMap[sev]||2,
-          injured:  Number(r['ผู้บาดเจ็บ'])||0,
-          dead:     Number(r['ผู้เสียชีวิต'])||0,
-          gps:      r['พิกัด GPS']||'',
-          detail:   r['รายละเอียด']||'',
-          officer:  r['เจ้าหน้าที่']||'',
-          photos:   (r['ลิงก์รูปภาพ']||'').split(/[;\n]/).filter(Boolean).map(function(u){return {viewUrl:u.trim()};}),
+          injured:  Number(r['ผู้บาดเจ็บ']||r['injured'])||0,
+          dead:     Number(r['ผู้เสียชีวิต']||r['dead'])||0,
+          gps:      r['พิกัด GPS']||r['gps']||'',
+          detail:   r['รายละเอียด']||r['detail']||'',
+          officer:  r['เจ้าหน้าที่']||r['officer']||'',
+          photos:   (r['ลิงก์รูปภาพ']||r['photos']||'').split(/[;\n]/).filter(Boolean).map(function(u){return {viewUrl:u.trim()};}),
           drivers:  drivers
         };
       });
@@ -584,8 +586,7 @@ async function uploadAllPhotos(reportId){
     showToast('อัปโหลดรูปที่ '+(i+1)+'/'+validFiles.length+'...');
     try{
       var base64=await fileToBase64(file);
-      var d=await callScript({
-        action:'uploadPhoto',
+      var d=await callWorker('/photo',{
         reportId:reportId,
         fileName:file.name||('photo_'+(i+1)+'.jpg'),
         mimeType:file.type||'image/jpeg',
@@ -597,6 +598,22 @@ async function uploadAllPhotos(reportId){
   return results;
 }
 
+
+async function requestPDF(i){
+  var r=reports[i];
+  var st=document.getElementById('pdf-station').value||station||'สถานีตำรวจ';
+  var of=document.getElementById('pdf-officer').value||officer||'เจ้าหน้าที่';
+  showToast('กำลังสร้าง PDF... (ใช้เวลา 10-20 วิ)');
+  try{
+    var d=await callWorker('/pdf',{station:st,officer:of,report:r});
+    if(d.status==='success'){
+      showToast('สร้าง PDF สำเร็จ ✓','ok');
+      setTimeout(function(){window.open(d.viewUrl,'_blank');},500);
+    }else{
+      showToast('PDF Error: '+d.message,'err');
+    }
+  }catch(e){showToast('PDF Error: '+e.message,'err');}
+}
 
 // ── Submit ─────────────────────────────────────────────────
 async function submitReport(){
@@ -636,7 +653,7 @@ async function submitReport(){
 
   // บันทึกลง Google Sheets
   try{
-    const d = await callScript({action:'addReport', data:r});
+    const d = await callWorker('/report', r);
     if(d.status==='success') showToast('บันทึก '+id+' สำเร็จ ✓','ok');
     else showToast('Sheets Error: '+d.message,'err');
   }catch(e){showToast('Sheets: '+e.message,'err');}
@@ -679,7 +696,7 @@ function toggleInc(i){document.getElementById('ib-'+i)?.classList.toggle('open')
 async function loadDashboard(){
   try{
     document.getElementById('hotspot-list').innerHTML='<div class="loading-text">กำลังโหลด...</div>';
-    const d = await callScript({action:'getStats'});
+    const d = await callWorker('/stats');
     if(d.status!=='success') throw new Error(d.message);
     const s=d.stats;
     document.getElementById('d-total').textContent=s.total;
@@ -807,26 +824,29 @@ async function testLine(){
   await sendLineViaScript('🚔 ทดสอบระบบแจ้งเตือน\nระบบบันทึกข้อมูลอุบัติเหตุ สภ.เมืองชลบุรี เชื่อมต่อสำเร็จ ✓');
 }
 
-// ──────────────────────────────────────────────────────────
-//  callScript — helper กลางสำหรับเรียก Apps Script ทุกอย่าง
-//
-//  สาเหตุที่ต้องใช้ text/plain และ redirect:follow:
-//  Apps Script doPost จะ redirect 302 ก่อนตอบกลับ
-//  ถ้าใช้ Content-Type: application/json browser จะส่ง
-//  OPTIONS preflight ก่อน ซึ่ง Apps Script ไม่รองรับ
-//  → ใช้ text/plain เพื่อข้าม preflight
-//  → ใช้ redirect:follow เพื่อตาม 302 ได้ถูกต้อง
-// ──────────────────────────────────────────────────────────
-async function callScript(payload){
+// ── callWorker — เรียก Cloudflare Worker (เร็วกว่า Apps Script มาก) ──
+async function callWorker(path, body=null) {
+  const url = CONFIG.WORKER_URL + path;
+  const opts = body
+    ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }
+    : { method:'GET' };
+  const res  = await fetch(url, opts);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e) { return { status:'error', message:'Parse error: '+text.slice(0,120) }; }
+}
+
+// ── callScript — ยังใช้อยู่เฉพาะ PDF และอัปโหลดรูป (ผ่าน GAS) ──
+async function callScript(payload) {
   const res = await fetch(CONFIG.SHEET_API_URL, {
-    method   : 'POST',
-    redirect : 'follow',
-    headers  : { 'Content-Type': 'text/plain' },   // ← สำคัญ: ข้าม preflight
-    body     : JSON.stringify(payload)
+    method  : 'POST',
+    redirect: 'follow',
+    headers : { 'Content-Type': 'text/plain' },
+    body    : JSON.stringify(payload)
   });
   const text = await res.text();
   try { return JSON.parse(text); }
-  catch(e){ return { status:'error', message:'Parse error: '+text.slice(0,120) }; }
+  catch(e) { return { status:'error', message:'Parse error: '+text.slice(0,120) }; }
 }
 
 async function sendLineViaScript(text){
@@ -835,13 +855,13 @@ async function sendLineViaScript(text){
     var sent = false;
     // ส่งไปห้องสั่งการ (Group) — ถ้าตั้งค่าไว้
     if(lineTarget){
-      const d=await callScript({action:'sendLine',token:lineToken,target:lineTarget,text:text});
+      const d=await callWorker('/line',{token:lineToken,target:lineTarget,text:text});
       if(d.status==='success'){ sent=true; }
       else { showToast('Line Group Error: '+d.message,'err'); }
     }
     // ส่งไปไลน์ส่วนตัว — ถ้าตั้งค่าไว้ และไม่ใช่ ID เดียวกับ Group
     if(lineSelf && lineSelf !== lineTarget){
-      const d2=await callScript({action:'sendLine',token:lineToken,target:lineSelf,text:text});
+      const d2=await callWorker('/line',{token:lineToken,target:lineSelf,text:text});
       if(d2.status==='success'){ sent=true; }
       else { showToast('Line ส่วนตัว Error: '+d2.message,'err'); }
     }
@@ -894,7 +914,7 @@ function loadSettings(){
 async function testSheet(){
   showToast('กำลังทดสอบ...');
   try{
-    const d = await callScript({action:'ping'});
+    const d = await callWorker('/ping');
     if(d.status==='success'){
       document.getElementById('sheet-dot').className='sdot ok';
       document.getElementById('sheet-status').textContent='เชื่อมต่อ Apps Script สำเร็จ ✓';
