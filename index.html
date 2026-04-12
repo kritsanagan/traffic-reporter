@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -130,6 +131,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 .toast.show{opacity:1}
 .toast.ok{background:#065f46}
 .toast.err{background:#7f1d1d}
+.reg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:24px}
+.reg-box{background:var(--bg);border-radius:16px;width:100%;max-width:380px;padding:28px 24px;text-align:center}
+.reg-logo{font-size:40px;margin-bottom:12px}
+.reg-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px}
+.reg-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+.reg-field{text-align:left;margin-bottom:14px}
+.reg-field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:500}
+.reg-field input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);background:var(--bg);font-family:inherit;outline:none}
+.reg-field input:focus{border-color:var(--blue2)}
+.reg-hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+.reg-btn{width:100%;padding:13px;background:var(--blue2);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
+.reg-btn:active{opacity:.85}
+.reg-skip{display:block;text-align:center;font-size:12px;color:var(--muted);margin-top:12px;cursor:pointer;text-decoration:underline}
 .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:430px;max-width:100%;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:100}
 .nbtn{flex:1;padding:10px 0 8px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
 .nbtn svg{width:20px;height:20px}
@@ -145,7 +159,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 //  SHEET_ID      = ID ของ Google Sheets (จาก URL)
 // ============================================================
 const CONFIG = {
-  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbwv5V2YHjzYMeW7mGfhqgLc_0TZFDDpn3-muoVvpFmVMdmefJjlbSzsHOFBhFmU7-E/exec',
+  SHEET_API_URL : https://script.google.com/macros/s/AKfycbx0g-It2GzAQUFqxsC4tbeCgIijepAO6RnRmYCsm82MHn5eC6_bsr_RRW22gqJMnAWn/exec',
   SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
 };
 </script>
@@ -323,6 +337,31 @@ const CONFIG = {
   </div><div class="modal-body" id="pdf-content"></div></div>
 </div>
 
+<!-- หน้าลงทะเบียนครั้งแรก -->
+<div class="reg-overlay" id="reg-overlay">
+  <div class="reg-box">
+    <div class="reg-logo">🚔</div>
+    <div class="reg-title">ระบบบันทึกอุบัติเหตุ<br>สภ.เมืองชลบุรี</div>
+    <div class="reg-sub">ลงทะเบียนครั้งแรกเพื่อรับแจ้งเตือนในไลน์ส่วนตัว</div>
+
+    <div class="reg-field">
+      <label>ชื่อ-ยศ เจ้าหน้าที่</label>
+      <input type="text" id="reg-name" placeholder="เช่น ด.ต.สมชาย ใจดี">
+    </div>
+
+    <div class="reg-field">
+      <label>Line User ID ของคุณ</label>
+      <input type="text" id="reg-uid" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+      <div class="reg-hint">
+        วิธีหา: เพิ่มเพื่อน Bot ใน Line → developers.line.biz → Messaging API → "Your user ID"
+      </div>
+    </div>
+
+    <button class="reg-btn" onclick="submitReg()">เริ่มใช้งาน →</button>
+    <span class="reg-skip" onclick="skipReg()">ข้ามก่อน ตั้งค่าทีหลัง</span>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <div class="nav">
@@ -350,8 +389,63 @@ const SB={1:'#FCEBEB',2:'#FAEEDA',3:'#EAF3DE'};
 const ST={1:'#A32D2D',2:'#854F0B',3:'#3B6D11'};
 
 // ── Init ───────────────────────────────────────────────────
+// ── ลงทะเบียนครั้งแรก ────────────────────────────────────────
+function checkFirstRun(){
+  const done = localStorage.getItem('reg_done');
+  if(done){
+    document.getElementById('reg-overlay').style.display='none';
+    return;
+  }
+  // แสดง popup
+  document.getElementById('reg-overlay').style.display='flex';
+}
+
+function submitReg(){
+  const name = document.getElementById('reg-name').value.trim();
+  const uid  = document.getElementById('reg-uid').value.trim();
+  if(!name){ showToast('กรุณากรอกชื่อเจ้าหน้าที่','err'); return; }
+
+  // บันทึกชื่อเจ้าหน้าที่
+  officer = name;
+  document.getElementById('pdf-officer').value = name;
+
+  // บันทึก User ID ถ้ากรอก
+  if(uid){
+    lineSelf = uid;
+    document.getElementById('line-self').value = uid;
+  }
+
+  // โหลด settings เดิมก่อนแล้ว merge
+  try{
+    const s = JSON.parse(localStorage.getItem('tfs')||'{}');
+    s.officer  = name;
+    if(uid) s.lineSelf = uid;
+    localStorage.setItem('tfs', JSON.stringify(s));
+  }catch(e){}
+
+  localStorage.setItem('reg_done','1');
+  document.getElementById('reg-overlay').style.display='none';
+
+  // อัปเดตสถานะ Line
+  if(lineToken && (lineTarget||lineSelf)){
+    document.getElementById('line-dot').className='sdot ok';
+    const dest=[];
+    if(lineTarget) dest.push('Group');
+    if(lineSelf)   dest.push('ส่วนตัว');
+    document.getElementById('line-status').textContent='พร้อมส่ง: '+dest.join(' + ');
+  }
+
+  showToast('ลงทะเบียนสำเร็จ ยินดีต้อนรับ '+name+' ✓','ok');
+}
+
+function skipReg(){
+  localStorage.setItem('reg_done','1');
+  document.getElementById('reg-overlay').style.display='none';
+}
+
 window.onload=async ()=>{
   loadSettings();
+  checkFirstRun();
   updateClock();
   setInterval(updateClock,1000);
   addDriver();
