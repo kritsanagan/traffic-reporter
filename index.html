@@ -762,7 +762,7 @@ function closePdfOutside(e){if(e.target.id==='pdf-overlay')closePdf();}
 
 // ── Line (ส่งผ่าน Apps Script เพื่อหลีกเลี่ยง CORS) ──────
 async function sendLineReport(i){
-  if(!lineToken||!lineTarget){showToast('กรุณาตั้งค่า Line ก่อน','err');return;}
+  if(!lineToken||(!lineTarget&&!lineSelf)){showToast('กรุณาตั้งค่า Line ก่อน','err');return;}
   const btn=document.getElementById('line-btn-'+i);
   if(btn){btn.disabled=true;btn.textContent='กำลังส่ง...';}
   const r=reports[i];
@@ -803,7 +803,7 @@ ${(function(){
 }
 
 async function testLine(){
-  if(!lineToken||!lineTarget){showToast('กรุณาบันทึกการตั้งค่าก่อน','err');return;}
+  if(!lineToken||(!lineTarget&&!lineSelf)){showToast('กรุณาบันทึกการตั้งค่าก่อน','err');return;}
   await sendLineViaScript('🚔 ทดสอบระบบแจ้งเตือน\nระบบบันทึกข้อมูลอุบัติเหตุ สภ.เมืองชลบุรี เชื่อมต่อสำเร็จ ✓');
 }
 
