@@ -764,8 +764,16 @@ async function sendLineReport(i){
   const r=reports[i];
   const emoji={1:'🔴',2:'🟡',3:'🟢'};
   const driversText=r.drivers&&r.drivers.length
-    ?r.drivers.map((d,di)=>`  ${di+1}. ${d.name} | ${d.phone} | ทะเบียน ${d.plate}${d.vtype?' | '+d.vtype:''}`).join('\n')
-    :'  ไม่มีข้อมูลผู้ขับขี่';
+    ?r.drivers.map((d,di)=>{
+      const parts=[];
+      if(d.gender) parts.push(d.gender);
+      if(d.age)    parts.push(d.age+' ปี');
+      if(d.phone)  parts.push(d.phone);
+      if(d.plate)  parts.push('ทะเบียน '+d.plate);
+      if(d.vtype)  parts.push(d.vtype);
+      return '  '+(di+1)+'. '+d.name+' | '+parts.join(' | ');
+    }).join('\n')
+    :'  ไม่มีข้อมูลคู่กรณี';
   const msg=`${emoji[r.sevNum||1]} รายงานอุบัติเหตุ [${r.id}]
 ━━━━━━━━━━━━━━━
 📍 ถนน/เส้นทาง: ${r.road}${r.tambon?' ต.'+r.tambon:''}
