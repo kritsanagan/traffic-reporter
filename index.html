@@ -263,10 +263,12 @@ const CONFIG = {
   <!-- ===== ตั้งค่า ===== -->
   <div id="panel-settings" class="panel">
     <div class="info-box">
-      <strong>วิธีหา Channel Access Token และ Group ID</strong><br>
-      1. <strong>Token:</strong> developers.line.biz → Channel → Messaging API → Issue token<br>
-      2. <strong>Group ID:</strong> เพิ่ม Bot เข้า Group → ส่งข้อความ → ดู groupId จาก webhook.site<br>
-      3. ใส่ค่าทั้งสองด้านล่าง → กด "บันทึก" → กด "ทดสอบส่ง"
+      <strong>วิธีตั้งค่า Line (อ่านก่อนใช้งาน)</strong><br>
+      1. <strong>Token:</strong> developers.line.biz → Channel → Messaging API → กด "Issue"<br>
+      2. <strong>เพิ่มเพื่อน Bot:</strong> สแกน QR Code ของ Bot ในหน้า Messaging API ก่อน<br>
+      3. <strong>User ID ส่วนตัว:</strong> developers.line.biz → Messaging API → "Your user ID" (ขึ้นต้น U)<br>
+      4. <strong>Group ID (ไม่บังคับ):</strong> เพิ่ม Bot เข้า Group → webhook.site → ดู groupId<br>
+      <span style="color:#1e3a8a;font-weight:500">★ ส่งแค่ไลน์ส่วนตัว:</span> ใส่เฉพาะ User ID — ปล่อย Group ID ว่าง ประหยัดโควต้า
     </div>
     <div class="settings-card">
       <div class="settings-title">
@@ -277,8 +279,8 @@ const CONFIG = {
       </div>
       <div class="field"><label>Channel Access Token</label>
         <input type="password" id="line-token" placeholder="วาง Channel Access Token ที่นี่"></div>
-      <div class="field"><label>Group ID ห้องสั่งการ (ขึ้นต้น C...)</label>
-        <input type="text" id="line-target" placeholder="Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"></div>
+      <div class="field"><label>Group ID ห้องสั่งการ (ขึ้นต้น C...) <span style="font-size:11px;color:var(--muted)">— ไม่บังคับ</span></label>
+        <input type="text" id="line-target" placeholder="ว่างได้ถ้าไม่ต้องการส่งห้องกลุ่ม"></div>
       <div class="field"><label>Line User ID ของผู้รายงาน (ขึ้นต้น U...) <span style="font-size:11px;color:var(--muted)">— รับสำเนาที่ไลน์ส่วนตัว</span></label>
         <input type="text" id="line-self" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"></div>
       <div class="status-row">
@@ -830,19 +832,21 @@ async function callScript(payload){
 async function sendLineViaScript(text){
   showToast('กำลังส่งแจ้งเตือน Line...');
   try{
-    // ส่งไปห้องสั่งการ (Group)
+    var sent = false;
+    // ส่งไปห้องสั่งการ (Group) — ถ้าตั้งค่าไว้
     if(lineTarget){
       const d=await callScript({action:'sendLine',token:lineToken,target:lineTarget,text:text});
-      if(d.status==='success'){
-        showToast('ส่ง Line Group สำเร็จ ✓','ok');
-      } else {
-        showToast('Line Error: '+d.message,'err');
-      }
+      if(d.status==='success'){ sent=true; }
+      else { showToast('Line Group Error: '+d.message,'err'); }
     }
-    // ส่งสำเนาไปไลน์ส่วนตัว (ถ้าตั้งค่าไว้ และไม่ใช่ ID เดียวกับ Group)
+    // ส่งไปไลน์ส่วนตัว — ถ้าตั้งค่าไว้ และไม่ใช่ ID เดียวกับ Group
     if(lineSelf && lineSelf !== lineTarget){
-      await callScript({action:'sendLine',token:lineToken,target:lineSelf,text:text});
+      const d2=await callScript({action:'sendLine',token:lineToken,target:lineSelf,text:text});
+      if(d2.status==='success'){ sent=true; }
+      else { showToast('Line ส่วนตัว Error: '+d2.message,'err'); }
     }
+    if(sent) showToast('ส่ง Line สำเร็จ ✓','ok');
+    if(!lineTarget && !lineSelf) showToast('กรุณาตั้งค่า User ID หรือ Group ID ก่อน','err');
   }catch(e){
     showToast('Apps Script: '+e.message,'err');
   }
@@ -856,9 +860,12 @@ function saveSettings(){
   station   =document.getElementById('pdf-station').value.trim();
   officer   =document.getElementById('pdf-officer').value.trim();
   localStorage.setItem('tfs',JSON.stringify({lineToken,lineTarget,lineSelf,station,officer}));
-  if(lineToken&&lineTarget){
+  if(lineToken&&(lineTarget||lineSelf)){
     document.getElementById('line-dot').className='sdot ok';
-    document.getElementById('line-status').textContent='ตั้งค่าแล้ว — พร้อมส่งแจ้งเตือน';
+    var dest=[];
+    if(lineTarget) dest.push('Group');
+    if(lineSelf)   dest.push('ส่วนตัว');
+    document.getElementById('line-status').textContent='พร้อมส่ง: '+dest.join(' + ');
   }
   showToast('บันทึกการตั้งค่าสำเร็จ ✓','ok');
 }
@@ -874,9 +881,12 @@ function loadSettings(){
     if(lineSelf)  document.getElementById('line-self').value=lineSelf;
     if(station)   document.getElementById('pdf-station').value=station;
     if(officer)   document.getElementById('pdf-officer').value=officer;
-    if(lineToken&&lineTarget){
+    if(lineToken&&(lineTarget||lineSelf)){
       document.getElementById('line-dot').className='sdot ok';
-      document.getElementById('line-status').textContent='ตั้งค่าแล้ว — พร้อมส่งแจ้งเตือน';
+      var dest=[];
+      if(lineTarget) dest.push('Group');
+      if(lineSelf)   dest.push('ส่วนตัว');
+      document.getElementById('line-status').textContent='พร้อมส่ง: '+dest.join(' + ');
     }
   }catch(e){}
 }
