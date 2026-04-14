@@ -381,8 +381,15 @@ async function loadReportsFromSheet(){
         const drivers = driverRaw.split(/[;\n]/).filter(Boolean).map(function(s){
           s = s.trim();
           if (s.indexOf('|') > -1) {
-            const parts = s.split('|');
-            return {name:(parts[0]||'').trim(), phone:(parts[1]||'').trim(), plate:(parts[2]||'').trim()};
+            const parts = s.split('|').map(p=>p.trim());
+            // รองรับทั้ง format เก่า (3 ส่วน) และใหม่ (6 ส่วน)
+            if (parts.length >= 6) {
+              // format ใหม่: name|gender|age|phone|plate|vtype
+              return {name:parts[0],gender:parts[1],age:parts[2],phone:parts[3],plate:parts[4],vtype:parts[5]};
+            } else {
+              // format เก่า: name|phone|plate|vtype
+              return {name:parts[0],phone:parts[1],plate:parts[2],vtype:parts[3]||''};
+            }
           }
           // รูปแบบ "ชื่อ: X  โทร: Y  ทะเบียน: Z"
           const nm = (s.match(/ชื่อ:\s*([^โ]+)/) || [])[1]||s;
@@ -647,7 +654,11 @@ async function submitReport(){
     injured:+(document.getElementById('injured').value||0),
     dead:+(document.getElementById('dead').value||0),
     gps:gpsCoords,
-    drivers:collectDrivers(),
+    drivers:(function(){
+      const drvs=collectDrivers();
+      console.log('[DEBUG] drivers before submit:', JSON.stringify(drvs));
+      return drvs;
+    })(),
     detail:document.getElementById('detail').value,
     officer:document.getElementById('pdf-officer').value||officer
   };
