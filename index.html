@@ -148,8 +148,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans Thai',sans-serif;ba
 const CONFIG = {
   WORKER_URL  : 'https://traffic-api.kritsanagan.workers.dev',
   // GAS ยังใช้อยู่เฉพาะ PDF และอัปโหลดรูป
-  SHEET_API_URL : 'วาง_APPS_SCRIPT_URL_ที่นี่',
-  SHEET_ID      : 'วาง_SPREADSHEET_ID_ที่นี่',
+  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbzEkQyyLgz-NU-ETx1NM3hhpXYWw9uwnzxznJBeGK1_ZtVLok05dkuH59TdkRYdEmX1/exec',
+  SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
 };
 </script>
 
@@ -357,6 +357,11 @@ window.onload=async ()=>{
   updateClock();
   setInterval(updateClock,1000);
   addDriver();
+
+  // เปิดแท็บตาม URL param เช่น ?tab=history, ?tab=stats, ?tab=settings
+  const _p = new URLSearchParams(window.location.search).get('tab');
+  const _tabMap = { 'history':'history', 'stats':'dashboard', 'dashboard':'dashboard', 'settings':'settings' };
+  if (_p && _tabMap[_p]) switchTab(_tabMap[_p]);
   document.getElementById('sheet-link').href=
     'https://docs.google.com/spreadsheets/d/'+CONFIG.SHEET_ID+'/edit';
   // โหลดประวัติจาก Google Sheets ตอนเปิดแอป
