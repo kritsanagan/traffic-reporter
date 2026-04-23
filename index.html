@@ -722,6 +722,15 @@ body{
   border-radius:0 0 4px 4px;
 }
 .nbtn.active svg{transform:translateY(-1px)}
+
+/* ── Required field highlight ── */
+.field-required input:invalid,
+.field-required select:invalid,
+select.req-err, input.req-err {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,.12) !important;
+}
+.req-label{color:var(--red);font-size:10px;font-weight:700;margin-left:4px}
 </style>
 </head>
 <body>
@@ -735,8 +744,8 @@ body{
 const CONFIG = {
   WORKER_URL  : 'https://traffic-api.kritsanagan.workers.dev',
   // GAS ยังใช้อยู่เฉพาะ PDF และอัปโหลดรูป
-  SHEET_API_URL : 'https://script.google.com/macros/s/AKfycbxQMqMUtHrJiIO5RxYfoQBQo2at9-zHOmRue8j90k4W4F2QHvjc1pJOozx_cXMt_Cij/exec',
-  SHEET_ID      : '1rIUh41fJ2exwT6J4Sz8MOhjd3oM5kwbrcAaxOl6o9Cw',
+  SHEET_API_URL : 'วาง_APPS_SCRIPT_URL_ที่นี่',
+  SHEET_ID      : 'วาง_SPREADSHEET_ID_ที่นี่',
 };
 </script>
 
@@ -770,7 +779,7 @@ const CONFIG = {
       </div>
       <button onclick="getGPS()" style="padding:7px 12px;background:var(--blue2);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500">GPS</button>
     </div>
-    <div class="field"><label>ถนน / เส้นทาง</label>
+    <div class="field"><label>ถนน / เส้นทาง <span class="req-label">* จำเป็น</span></label>
       <select id="road-input" onchange="toggleRoadOther()">
         <option value="">-- เลือกถนน --</option>
         <option>ถนนสุขุมวิท (3)</option>
@@ -793,9 +802,9 @@ const CONFIG = {
         <option value="__OTHER__">ถนนอื่นๆ (ระบุเอง)</option>
       </select>
       <input type="text" id="road-other" placeholder="ระบุชื่อถนน/เส้นทาง" style="display:none;margin-top:8px"></div>
-    <div class="field"><label>จุดเกิดเหตุ <span style="font-size:11px;color:var(--muted);font-weight:500">— ระบุตำแหน่งที่ชัดเจน</span></label>
+    <div class="field"><label>จุดเกิดเหตุ <span class="req-label">* จำเป็น</span> <span style="font-size:11px;color:var(--muted);font-weight:500">— ระบุตำแหน่งที่ชัดเจน</span></label>
       <input type="text" id="spot" placeholder="เช่น บริเวณหน้าร้านกาแฟเจ๊ตั๊ก, สี่แยกไฟแดง, หน้าโรงเรียน"></div>
-    <div class="field"><label>ตำบล</label>
+    <div class="field"><label>ตำบล <span class="req-label">* จำเป็น</span></label>
       <select id="tambon">
         <option value="">-- เลือกตำบล --</option>
         <option>บางปลาสร้อย</option>
@@ -811,7 +820,7 @@ const CONFIG = {
         <option>หนองข้างคอก</option>
       </select></div>
     <div class="two-col">
-      <div class="field"><label>ลักษณะถนน</label>
+      <div class="field"><label>ลักษณะถนน <span class="req-label">* จำเป็น</span></label>
         <select id="road-type">
           <option value="">-- เลือก --</option>
           <option>ทางตรง</option>
@@ -823,7 +832,7 @@ const CONFIG = {
           <option>ทางคู่ขนาน</option>
           <option>หน้าทางเข้าซอย</option>
         </select></div>
-      <div class="field"><label>สภาพพื้นถนน</label>
+      <div class="field"><label>สภาพพื้นถนน <span class="req-label">* จำเป็น</span></label>
         <select id="road-cond">
           <option value="">-- เลือก --</option>
           <option>แห้ง</option>
@@ -834,7 +843,7 @@ const CONFIG = {
           <option>กำลังก่อสร้าง</option>
         </select></div>
     </div>
-    <div class="field"><label>ประเภทอุบัติเหตุ</label>
+    <div class="field"><label>ประเภทอุบัติเหตุ <span class="req-label">* จำเป็น</span></label>
       <select id="acc-type">
         <option value="">-- เลือกประเภท --</option>
         <option>รถชนกัน (2 คัน)</option>
@@ -845,7 +854,7 @@ const CONFIG = {
         <option>รถจักรยานยนต์ล้ม</option>
         <option>อื่นๆ</option>
       </select></div>
-    <div class="field"><label>ลักษณะการเกิดเหตุ <span style="font-size:11px;color:var(--muted);font-weight:500">— สาเหตุหรือพฤติกรรม</span></label>
+    <div class="field"><label>ลักษณะการเกิดเหตุ <span class="req-label">* จำเป็น</span> <span style="font-size:11px;color:var(--muted);font-weight:500">— สาเหตุหรือพฤติกรรม</span></label>
       <select id="acc-cause">
         <option value="">-- เลือก --</option>
         <option>ขับรถชนท้าย</option>
@@ -865,7 +874,7 @@ const CONFIG = {
       <div class="field" style="margin:0"><label>ผู้เสียชีวิต (คน)</label>
         <input type="number" min="0" id="dead" placeholder="0" style="text-align:center"></div>
     </div>
-    <div class="slabel">ข้อมูลคู่กรณีและยานพาหนะ</div>
+    <div class="slabel">ข้อมูลคู่กรณีและยานพาหนะ <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— ไม่บังคับ</span></div>
     <div id="drivers-container"></div>
     <button class="add-driver" onclick="addDriver()">+ เพิ่มคู่กรณี</button>
     <div class="slabel">ภาพถ่ายหลักฐาน</div>
@@ -1322,7 +1331,42 @@ async function requestPDF(i){
 
 // ── Submit ─────────────────────────────────────────────────
 async function submitReport(){
-  if(!currentSev){showToast('กรุณาเลือกระดับความรุนแรง','err');return;}
+  // ── Validation ทุก field สำคัญ ─────────────────────────
+  const _road    = (function(){
+    const sel = document.getElementById('road-input').value;
+    if(sel === '__OTHER__') return document.getElementById('road-other')?.value?.trim()||'';
+    return sel;
+  })();
+  const _spot    = document.getElementById('spot')?.value?.trim()||'';
+  const _tambon  = document.getElementById('tambon')?.value?.trim()||'';
+  const _rdType  = document.getElementById('road-type')?.value?.trim()||'';
+  const _rdCond  = document.getElementById('road-cond')?.value?.trim()||'';
+  const _type    = document.getElementById('acc-type')?.value?.trim()||'';
+  const _cause   = document.getElementById('acc-cause')?.value?.trim()||'';
+  const _injured = parseInt(document.getElementById('injured')?.value||0);
+  const _dead    = parseInt(document.getElementById('dead')?.value||0);
+  const _gps     = gpsCoords?.trim()||'';
+
+  const missing = [];
+  if(!currentSev)              missing.push('ระดับความรุนแรง');
+  if(!_road)                   missing.push('ถนน / เส้นทาง');
+  if(!_spot)                   missing.push('จุดเกิดเหตุ');
+  if(!_tambon)                 missing.push('ตำบล');
+  if(!_rdType)                 missing.push('ลักษณะถนน');
+  if(!_rdCond)                 missing.push('สภาพพื้นถนน');
+  if(!_type)                   missing.push('ประเภทอุบัติเหตุ');
+  if(!_cause)                  missing.push('ลักษณะการเกิดเหตุ');
+  // จำนวนผู้บาดเจ็บ/เสียชีวิต — ไม่บังคับ (บางเคสไม่มีผู้บาดเจ็บ)
+  if(!_gps)                    missing.push('พิกัด GPS (กดปุ่ม GPS ก่อน)');
+
+  if(missing.length > 0){
+    // แสดง popup แจ้งเตือน field ที่ขาด
+    const msg = '⚠️ กรุณากรอกข้อมูลสำคัญให้ครบถ้วน\n\nยังขาด:\n' +
+      missing.map((m,i) => '  ' + (i+1) + '. ' + m).join('\n');
+    alert(msg);
+    return;
+  }
+
   const btn=document.getElementById('submit-btn');
   btn.disabled=true; btn.textContent='กำลังบันทึก...';
 
@@ -1355,11 +1399,7 @@ async function submitReport(){
     injured:+(document.getElementById('injured').value||0),
     dead:+(document.getElementById('dead').value||0),
     gps:gpsCoords,
-    drivers:(function(){
-      const drvs=collectDrivers();
-      console.log('[DEBUG] drivers before submit:', JSON.stringify(drvs));
-      return drvs;
-    })(),
+    drivers:collectDrivers(),
     detail:document.getElementById('detail').value,
     officer:document.getElementById('pdf-officer').value||officer
   };
