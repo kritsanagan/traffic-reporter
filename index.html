@@ -877,7 +877,10 @@ const CONFIG = {
     <div class="slabel">ข้อมูลคู่กรณีและยานพาหนะ <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— ไม่บังคับ</span></div>
     <div id="drivers-container"></div>
     <button class="add-driver" onclick="addDriver()">+ เพิ่มคู่กรณี</button>
-    <div class="slabel">ภาพถ่ายหลักฐาน</div>
+    <div class="slabel">ภาพถ่ายหลักฐาน <span class="req-label">* จำเป็น</span></div>
+    <div style="font-size:11.5px;color:#1e40af;margin:-4px 0 10px;line-height:1.6;padding:7px 12px;background:#dbeafe;border-radius:6px;border-left:3px solid #2563EB">
+      📷 ให้บันทึกภาพอุบัติเหตุมุมกว้างโดยเห็นลักษณะการเกิดเหตุ อย่างน้อย 1 ภาพ
+    </div>
     <input type="file" id="photo-input" accept="image/*" multiple
       style="display:none" onchange="handlePhotoSelect(this)">
     <div class="photo-row" id="photo-row">
@@ -1362,6 +1365,8 @@ async function submitReport(){
   if(!_cause)                  missing.push('ลักษณะการเกิดเหตุ');
   // จำนวนผู้บาดเจ็บ/เสียชีวิต — ไม่บังคับ (บางเคสไม่มีผู้บาดเจ็บ)
   if(!_gps)                    missing.push('พิกัด GPS (กดปุ่ม GPS ก่อน)');
+  const _hasPhoto = photoFiles && photoFiles.filter(Boolean).length > 0;
+  if(!_hasPhoto)               missing.push('ภาพถ่ายหลักฐาน (อย่างน้อย 1 ภาพ)');
 
   if(missing.length > 0){
     // แสดง popup แจ้งเตือน field ที่ขาด
