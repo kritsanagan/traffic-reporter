@@ -1040,12 +1040,15 @@ async function loadReportsFromSheet(){
           if (s.indexOf('|') > -1) {
             const parts = s.split('|').map(p=>p.trim());
             // รองรับทั้ง format เก่า (3 ส่วน) และใหม่ (6 ส่วน)
-            if (parts.length >= 6) {
-              // format ใหม่: name|gender|age|phone|plate|vtype
-              return {name:parts[0],gender:parts[1],age:parts[2],phone:parts[3],plate:parts[4],vtype:parts[5]};
+            if (parts.length >= 7) {
+              // format ใหม่สุด (v9): name|gender|age|phone|plate|vtype|safety
+              return {name:parts[0],gender:parts[1],age:parts[2],phone:parts[3],plate:parts[4],vtype:parts[5],safety:parts[6]||''};
+            } else if (parts.length >= 6) {
+              // format ใหม่ (v8): name|gender|age|phone|plate|vtype
+              return {name:parts[0],gender:parts[1],age:parts[2],phone:parts[3],plate:parts[4],vtype:parts[5],safety:''};
             } else {
               // format เก่า: name|phone|plate|vtype
-              return {name:parts[0],phone:parts[1],plate:parts[2],vtype:parts[3]||''};
+              return {name:parts[0],phone:parts[1],plate:parts[2],vtype:parts[3]||'',safety:''};
             }
           }
           // รูปแบบ "ชื่อ: X  โทร: Y  ทะเบียน: Z"
@@ -1079,6 +1082,7 @@ async function loadReportsFromSheet(){
           time:     cleanTime(r['เวลา']||r['time']),
           road:     r['ถนน/สถานที่']||r['road']||'',
           spot:     r['จุดเกิดเหตุ']||r['spot']||'',
+          tambon:   r['ตำบล']||r['tambon']||'',
           roadType: r['ลักษณะถนน']||r['road_type']||'',
           roadCond: r['สภาพพื้นถนน']||r['road_cond']||'',
           cause:    r['ลักษณะการเกิดเหตุ']||r['cause']||'',
