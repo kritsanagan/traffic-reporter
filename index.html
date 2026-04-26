@@ -879,7 +879,7 @@ const CONFIG = {
     <button class="add-driver" onclick="addDriver()">+ เพิ่มคู่กรณี</button>
     <div class="slabel">ภาพถ่ายหลักฐาน <span class="req-label">* จำเป็น</span></div>
     <div style="font-size:11.5px;color:#1e40af;margin:-4px 0 10px;line-height:1.6;padding:7px 12px;background:#dbeafe;border-radius:6px;border-left:3px solid #2563EB">
-      📷 ให้บันทึกภาพอุบัติเหตุมุมกว้างโดยเห็นลักษณะการเกิดเหตุ อย่างน้อย 1 ภาพ
+      📷 ให้บันทึกภาพอุบัติเหตุมุมกว้างโดยเห็นภาพรวม อย่างน้อย 1 ภาพ
     </div>
     <input type="file" id="photo-input" accept="image/*" multiple
       style="display:none" onchange="handlePhotoSelect(this)">
@@ -1417,15 +1417,103 @@ async function submitReport(){
   reports.unshift(r);
   renderHistory();
 
-  // บันทึกลง Google Sheets
+  // บันทึกลง D1 + Sheets
   try{
     const d = await callWorker('/report', r);
-    if(d.status==='success') showToast('บันทึก '+id+' สำเร็จ ✓','ok');
-    else showToast('Sheets Error: '+d.message,'err');
-  }catch(e){showToast('Sheets: '+e.message,'err');}
+    if(d.status!=='success') showToast('บันทึก Error: '+d.message,'err');
+  }catch(e){showToast('บันทึก Error: '+e.message,'err');}
+
+  // ── ส่ง LINE อัตโนมัติทันทีหลังบันทึก ──────────────────
+  if(lineToken && (lineTarget || lineSelf)){
+    btn.textContent='กำลังส่ง Line...';
+    try{
+      const emoji={1:'🔴',2:'🟡',3:'🟢'};
+      const driversText=r.drivers&&r.drivers.length
+        ?r.drivers.map((d,di)=>{
+          const parts=[];
+          if(d.gender) parts.push(d.gender);
+          if(d.age)    parts.push(d.age+' ปี');
+          if(d.phone)  parts.push(d.phone);
+          if(d.plate)  parts.push('ทะเบียน '+d.plate);
+          if(d.vtype)  parts.push(d.vtype);
+          if(d.safety) parts.push(d.safety);
+          return '  '+(di+1)+'. '+d.name+' | '+parts.join(' | ');
+        }).join('\n')
+        :'  ไม่มีข้อมูลคู่กรณี';
+      const msg=`${emoji[r.sevNum||1]} รายงานอุบัติเหตุ [${r.id}]
+━━━━━━━━━━━━━━━
+📍 ถนน/เส้นทาง: ${r.road}${r.tambon?' ต.'+r.tambon:''}
+${r.spot?'📌 จุดเกิดเหตุ: '+r.spot+'\n':''}🕐 วันที่/เวลา: ${r.date} ${r.time} น.
+🚗 ประเภทอุบัติเหตุ: ${r.type}
+${r.cause?'⚡ ลักษณะการเกิดเหตุ: '+r.cause+'\n':''}${r.roadType?'🛣️ ลักษณะถนน: '+r.roadType+'\n':''}${r.roadCond?'💧 สภาพพื้นถนน: '+r.roadCond+'\n':''}⚠️ ระดับความรุนแรง: ${r.severity}
+🤕 บาดเจ็บ ${r.injured} คน | เสียชีวิต ${r.dead} คน
+━━━━━━━━━━━━━━━
+👤 คู่กรณี:
+${driversText}
+━━━━━━━━━━━━━━━
+📌 GPS: ${r.gps||'ไม่ระบุ'}
+${(function(){
+  if(!r.gps||r.gps==='ไม่ระบุ') return '';
+  var parts=r.gps.replace(/[°NEne]/g,'').split(',');
+  if(parts.length<2) return '';
+  var lat=parts[0].trim(), lng=parts[1].trim();
+  return '🗺️ https://maps.google.com/?q='+lat+','+lng;
+})()}${r.detail?'\n📝 รายละเอียด: '+r.detail:''}
+📋 รายงานโดย: ${r.officer||officer}`;
+
+      var lineSent = false;
+      if(lineTarget){
+        const dl = await callWorker('/line',{token:lineToken,target:lineTarget,text:msg});
+        if(dl.status==='success') lineSent = true;
+      }
+      if(lineSelf && lineSelf !== lineTarget){
+        const dl2 = await callWorker('/line',{token:lineToken,target:lineSelf,text:msg});
+        if(dl2.status==='success') lineSent = true;
+      }
+
+      // แสดง popup สรุปผล
+      if(lineSent){
+        alert('✅ บันทึกข้อมูลสำเร็จ\nส่งข้อมูลแจ้งทางไลน์เรียบร้อย');
+      } else {
+        alert('✅ บันทึกข้อมูลสำเร็จ\n⚠️ ส่ง LINE ไม่สำเร็จ กรุณาส่งด้วยตนเองในหน้าประวัติ');
+      }
+    }catch(e){
+      alert('✅ บันทึกข้อมูลสำเร็จ\n⚠️ ส่ง LINE Error: '+e.message);
+    }
+  } else {
+    // ไม่ได้ตั้งค่า LINE — แจ้งเตือนเฉพาะบันทึกสำเร็จ
+    alert('✅ บันทึกข้อมูลสำเร็จ\n⚠️ กรุณาตั้งค่า LINE ในหน้าตั้งค่าเพื่อส่งแจ้งเตือนอัตโนมัติ');
+  }
 
   btn.disabled=false; btn.textContent='💾 บันทึกรายงาน';
-  setTimeout(()=>switchNav('history'),800);
+
+  // รีเซตฟอร์ม
+  setSev(0);
+  gpsCoords='';
+  document.getElementById('loc-text').textContent='กดปุ่ม GPS เพื่อระบุตำแหน่ง';
+  document.getElementById('loc-sub').textContent='แตะปุ่มด้านขวาเพื่อรับพิกัด';
+  document.getElementById('road-input').value='';
+  document.getElementById('road-other').style.display='none';
+  document.getElementById('spot').value='';
+  document.getElementById('tambon').value='';
+  document.getElementById('road-type').value='';
+  document.getElementById('road-cond').value='';
+  document.getElementById('acc-type').value='';
+  document.getElementById('acc-cause').value='';
+  document.getElementById('injured').value='';
+  document.getElementById('dead').value='';
+  document.getElementById('detail').value='';
+  document.getElementById('drivers-container').innerHTML='';
+  document.getElementById('photo-row').innerHTML=`<div class="photo-box" id="photo-add-btn" onclick="document.getElementById('photo-input').click()">
+    <div style="text-align:center;pointer-events:none">
+      <div style="font-size:22px">📷</div>
+      <div style="font-size:10px;margin-top:3px;color:var(--muted)">ถ่าย/เลือกรูป</div>
+    </div></div>`;
+  photoFiles=[];
+  driverCount=0;
+  addDriver();
+
+  switchNav('history');
 }
 
 // ── History ────────────────────────────────────────────────
