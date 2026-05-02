@@ -19,6 +19,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<!-- PWA Android -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1C3D">
+<!-- PWA iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="อุบัติเหตุจราจร">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <title>ระบบบันทึกข้อมูลอุบัติเหตุ สภ.เมืองชลบุรี</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -1428,19 +1439,130 @@ async function uploadAllPhotos(reportId){
 
 
 async function requestPDF(i){
-  var r=reports[i];
   var st=document.getElementById('pdf-station').value||station||'สถานีตำรวจ';
   var of=document.getElementById('pdf-officer').value||officer||'เจ้าหน้าที่';
-  showToast('กำลังสร้าง PDF... (ใช้เวลา 10-20 วิ)');
+  showPdfPhotoModal(i, st, of);
+}
+
+function showPdfPhotoModal(idx, st, of){
+  var r = reports[idx];
+  // ลบ overlay เก่าถ้ามี
+  var old = document.getElementById('pdf-photo-overlay');
+  if(old) old.remove();
+
+  // รายการรูปจาก Drive
+  var drivePhotos = (r.photos||[]).filter(function(p){ return p && (p.viewUrl||p); });
+  var driveHtml = '';
+  if(drivePhotos.length > 0){
+    driveHtml = '<div style="font-size:11px;color:#64748b;margin-bottom:6px">รูปที่อัปโหลดไว้ใน Drive:</div>';
+    drivePhotos.forEach(function(p, i){
+      var url = p.viewUrl || String(p);
+      driveHtml += '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1.5px solid #E2E8F0;margin-bottom:6px;cursor:pointer;background:#F8FAFF">' +
+        '<input type="radio" name="pdf-src" value="drive_' + i + '" data-url="' + url + '" style="accent-color:#1E3A8A;width:16px;height:16px"> ' +
+        '<span style="font-size:12px;color:#1E3A8A">📷 รูปที่ ' + (i+1) + ' (จาก Drive)</span></label>';
+    });
+    driveHtml += '<div style="border-top:1px solid #E2E8F0;margin:8px 0"></div>';
+  }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'pdf-photo-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(11,28,61,.75);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:16px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">' +
+      '<div style="background:linear-gradient(135deg,#0B1C3D,#1E3A8A);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-radius:16px 16px 0 0">' +
+        '<span style="color:#fff;font-size:14px;font-weight:700">🖨️ สร้างใบรายงาน PDF</span>' +
+        '<button id="pdf-modal-close" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1;padding:0">×</button>' +
+      '</div>' +
+      '<div style="padding:16px">' +
+        '<div style="font-size:12.5px;font-weight:700;color:#0B1C3D;margin-bottom:10px">เลือกรูปภาพประกอบ (ไม่บังคับ)</div>' +
+        driveHtml +
+        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1.5px dashed #CBD5E1;margin-bottom:6px;cursor:pointer;background:#F8FAFC">' +
+          '<input type="radio" name="pdf-src" value="file" style="accent-color:#1E3A8A;width:16px;height:16px"> ' +
+          '<span style="font-size:12px;color:#64748b">📁 เลือกรูปจากเครื่อง PC / มือถือ</span></label>' +
+        '<input type="file" id="pdf-file-input" accept="image/*" style="display:none">' +
+        '<div id="pdf-img-preview" style="display:none;text-align:center;margin:8px 0">' +
+          '<img id="pdf-img-tag" style="max-height:130px;max-width:100%;border-radius:8px;border:1px solid #E2E8F0"></div>' +
+        '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1.5px solid #E2E8F0;margin-bottom:0;cursor:pointer;background:#F8FAFF">' +
+          '<input type="radio" name="pdf-src" value="none" checked style="accent-color:#1E3A8A;width:16px;height:16px"> ' +
+          '<span style="font-size:12px;color:#64748b">ไม่ใส่รูปภาพ</span></label>' +
+      '</div>' +
+      '<div style="padding:0 16px 16px;display:flex;gap:8px">' +
+        '<button id="pdf-cancel-btn" style="flex:1;padding:11px;background:#F1F5F9;border:none;border-radius:8px;font-size:13px;cursor:pointer;color:#475569;font-weight:600">ยกเลิก</button>' +
+        '<button id="pdf-build-btn" style="flex:2;padding:11px;background:linear-gradient(135deg,#0B1C3D,#1E3A8A);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:#fff">🖨️ สร้าง PDF</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+
+  // close handlers
+  document.getElementById('pdf-modal-close').onclick = function(){ overlay.remove(); };
+  document.getElementById('pdf-cancel-btn').onclick  = function(){ overlay.remove(); };
+
+  // radio "file" → เปิด file picker
+  overlay.querySelectorAll('input[name="pdf-src"]').forEach(function(radio){
+    radio.addEventListener('change', function(){
+      if(this.value === 'file') document.getElementById('pdf-file-input').click();
+    });
+  });
+
+  // file picker เลือกรูปแล้ว → preview
+  document.getElementById('pdf-file-input').onchange = function(){
+    if(!this.files || !this.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      document.getElementById('pdf-img-tag').src = e.target.result;
+      document.getElementById('pdf-img-preview').style.display = 'block';
+      overlay.querySelector('input[value="file"]').checked = true;
+    };
+    reader.readAsDataURL(this.files[0]);
+  };
+
+  // build PDF
+  document.getElementById('pdf-build-btn').onclick = function(){
+    overlay.remove();
+    buildPDF(idx, st, of);
+  };
+}
+
+async function buildPDF(idx, st, of){
+  var r = reports[idx];
+  var photoB64 = '';
+
+  var selected = document.querySelector('input[name="pdf-src"]:checked');
+  if(selected && selected.value === 'file'){
+    var img = document.getElementById('pdf-img-tag');
+    if(img && img.src && img.src.startsWith('data:')) photoB64 = img.src;
+  } else if(selected && selected.value.startsWith('drive_')){
+    var driveUrl = selected.getAttribute('data-url');
+    if(driveUrl){
+      try{
+        showToast('กำลังโหลดรูปจาก Drive...');
+        var fileId = (driveUrl.match(/\/d\/([^\/\?]+)/) || [])[1];
+        if(fileId){
+          var res = await fetch('https://drive.google.com/thumbnail?id='+fileId+'&sz=w800');
+          if(res.ok){
+            var blob = await res.blob();
+            photoB64 = await new Promise(function(resolve){
+              var reader = new FileReader();
+              reader.onload = function(e){ resolve(e.target.result); };
+              reader.readAsDataURL(blob);
+            });
+          }
+        }
+      } catch(e){ photoB64 = ''; }
+    }
+  }
+
+  showToast('กำลังสร้าง PDF... (ใช้เวลา 10-30 วิ)');
   try{
-    var d=await callWorker('/pdf',{station:st,officer:of,report:r});
-    if(d.status==='success'){
+    var d = await callWorker('/pdf', {station:st, officer:of, report:r, photoB64:photoB64});
+    if(d.status === 'success'){
       showToast('สร้าง PDF สำเร็จ ✓','ok');
-      setTimeout(function(){window.open(d.viewUrl,'_blank');},500);
-    }else{
+      setTimeout(function(){ window.open(d.viewUrl,'_blank'); }, 500);
+    } else {
       showToast('PDF Error: '+d.message,'err');
     }
-  }catch(e){showToast('PDF Error: '+e.message,'err');}
+  } catch(e){ showToast('PDF Error: '+e.message,'err'); }
 }
 
 // ── Submit ─────────────────────────────────────────────────
@@ -1950,6 +2072,16 @@ function showToast(msg,type=''){
   const el=document.getElementById('toast');
   el.textContent=msg; el.className='toast show'+(type?' '+type:'');
   clearTimeout(el._t); el._t=setTimeout(()=>el.className='toast',3000);
+}
+</script>
+<script>
+// ── PWA Service Worker ──────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/traffic-reporter/sw.js')
+      .then(function(reg) { console.log('SW registered:', reg.scope); })
+      .catch(function(e) { console.log('SW error:', e); });
+  });
 }
 </script>
 </body>
