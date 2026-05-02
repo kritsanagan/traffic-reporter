@@ -1439,8 +1439,9 @@ async function uploadAllPhotos(reportId){
 
 
 async function requestPDF(i){
+  var r=reports[i];
   var st=document.getElementById('pdf-station').value||station||'สถานีตำรวจ';
-  var of=document.getElementById('pdf-officer').value||officer||'เจ้าหน้าที่';
+  var of=document.getElementById('pdf-officer').value||(r&&r.officer)||officer||'เจ้าหน้าที่';
   showPdfPhotoModal(i, st, of);
 }
 
