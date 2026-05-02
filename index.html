@@ -1815,6 +1815,7 @@ function renderHistory(){
             </div>
           </div>`).join(''):''}
         <div class="inc-btns">
+          <button class="btn-pdf"  onclick="event.stopPropagation();requestPDF(${i})">🖨️ PDF</button>
           <button class="btn-line" onclick="event.stopPropagation();sendLineReport(${i})" id="line-btn-${i}" style="flex:1">💬 แจ้งเตือน Line</button>
         </div>
       </div>
