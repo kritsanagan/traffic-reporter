@@ -1816,6 +1816,7 @@ function renderHistory(){
             </div>
           </div>`).join(''):''}
         <div class="inc-btns">
+          <button class="btn-edit" onclick="event.stopPropagation();openEditModal(${i})" style="flex:1;padding:8px;background:#F0F4FF;border:1.5px solid #C7D7FF;border-radius:8px;font-size:13px;font-weight:600;color:#1E3A8A;cursor:pointer">✏️ แก้ไข</button>
           <button class="btn-pdf"  onclick="event.stopPropagation();requestPDF(${i})">🖨️ PDF</button>
           <button class="btn-line" onclick="event.stopPropagation();sendLineReport(${i})" id="line-btn-${i}" style="flex:1">💬 แจ้งเตือน Line</button>
         </div>
@@ -1865,6 +1866,337 @@ function renderBars(id,obj,colors,isTime){
     <div class="bar-row"><div class="bar-lbl">${l}</div>
     <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/max*100)}%;background:${colors[i%colors.length]}">${v}</div>
     </div></div>`).join('');
+}
+
+// ── แก้ไขรายงาน ────────────────────────────────────────────
+function openEditModal(idx) {
+  const r = reports[idx];
+  if (!r) return;
+
+  // ลบ overlay เก่า
+  const old = document.getElementById('edit-overlay');
+  if (old) old.remove();
+
+  // สร้าง drivers HTML
+  let drvHtml = '';
+  const drvList = r.drivers || [];
+  drvList.forEach(function(d, i) {
+    const n = i + 1;
+    // แยก plate กับ province
+    const plateMatch = (d.plate || '').match(/^([^(]+?)(?:\s*\(([^)]+)\))?$/);
+    const platePure  = plateMatch ? (plateMatch[1] || '').trim() : d.plate || '';
+    const provPure   = plateMatch ? (plateMatch[2] || '') : '';
+
+    // safety options
+    const safetyOpts = ['สวมหมวกนิรภัย','ไม่สวมหมวกนิรภัย','คาดเข็มขัดนิรภัย','ไม่คาดเข็มขัดนิรภัย'];
+    const safetyHtml = safetyOpts.map(o =>
+      `<option${d.safety===o?' selected':''}>${o}</option>`).join('');
+
+    const vtypes = ['รถยนต์กระบะ','รถยนต์เก๋ง','รถบรรทุก','รถบรรทุกพ่วง','รถจักรยานยนต์','รถจักรยาน','คนเดินเท้า','อื่นๆ (ระบุในหมายเหตุ)'];
+    const vtHtml = vtypes.map(o => `<option${d.vtype===o?' selected':''}>${o}</option>`).join('');
+
+    drvHtml += `<div id="edc-${n}" style="background:#F8FAFF;border:1px solid #DBEAFE;border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <div style="width:20px;height:20px;border-radius:50%;background:#1E3A8A;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">${n}</div>
+        <span style="font-weight:600;font-size:13px">คู่กรณีที่ ${n}</span>
+        <span onclick="document.getElementById('edc-${n}').remove()" style="margin-left:auto;cursor:pointer;font-size:18px;color:#94A3B8;line-height:1">×</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="grid-column:1/-1"><label style="font-size:11px;color:#64748B">ชื่อ-นามสกุล</label>
+          <input id="edn-${n}" value="${d.name||''}" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px"></div>
+        <div><label style="font-size:11px;color:#64748B">เพศ</label>
+          <select id="edg-${n}" style="width:100%;padding:7px 8px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px">
+            <option value="">--</option>
+            <option${d.gender==='ชาย'?' selected':''}>ชาย</option>
+            <option${d.gender==='หญิง'?' selected':''}>หญิง</option>
+          </select></div>
+        <div><label style="font-size:11px;color:#64748B">อายุ</label>
+          <input id="eda-${n}" type="number" value="${d.age||''}" placeholder="35" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px;text-align:center"></div>
+        <div><label style="font-size:11px;color:#64748B">โทรศัพท์</label>
+          <input id="edp-${n}" value="${d.phone||''}" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px"></div>
+        <div><label style="font-size:11px;color:#64748B">ทะเบียนรถ</label>
+          <input id="edl-${n}" value="${platePure}" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px;text-transform:uppercase;font-family:monospace;font-weight:700"></div>
+        <div><label style="font-size:11px;color:#64748B">จังหวัด (ทะเบียน)</label>
+          <input id="edv-${n}" value="${provPure}" placeholder="ชลบุรี" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px"></div>
+        <div><label style="font-size:11px;color:#64748B">ประเภทรถ</label>
+          <select id="edt-${n}" style="width:100%;padding:7px 8px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px">
+            <option value="">-- เลือก --</option>${vtHtml}
+          </select></div>
+        <div><label style="font-size:11px;color:#64748B">อุปกรณ์นิรภัย</label>
+          <select id="eds-${n}" style="width:100%;padding:7px 8px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px">
+            <option value="">-- เลือก --</option>${safetyHtml}
+          </select></div>
+      </div>
+    </div>`;
+  });
+
+  // road options
+  const roads = ['ถนนสุขุมวิท (3)','ถนนเทพรัตน (34)','ถนนเลี่ยงเมืองชลบุรี (361)','ถนนศุขประยูร (315)','ถนนเศรษฐกิจ (344)','ถนนพระยาสัจจา','ถนนวชิรปราการ','ถนนเจตน์จำนงค์','สะพานชลมารควิถี','ถนนโปรษยานนท์-สุขุมวิท','ถนนโปรษยานนท์-พระยาสัจจา','ถนนโรงพยาบาลเก่า','ถนนตำหนักน้ำ','ถนนพาสเภตรา','ถนนวิบูลย์ธรรมรักษ์','ถนนบ้านสวน-หนองข้างคอก','ถนนคู่ขนานมอเตอร์เวย์'];
+  const isOtherRoad = !roads.includes(r.road);
+  const roadOptHtml = roads.map(o => `<option${r.road===o?' selected':''}>${o}</option>`).join('');
+
+  const tambons = ['บางปลาสร้อย','มะขามหย่ง','บ้านโขด','บางทราย','หนองไม้แดง','คลองตำหรุ','นาป่า','บ้านสวน','หนองรี','สำนักบก','หนองข้างคอก'];
+  const tambonOptHtml = tambons.map(o => `<option${r.tambon===o?' selected':''}>${o}</option>`).join('');
+
+  const rdTypes = ['ทางตรง','ทางโค้ง','ทางร่วม / ทางแยก','จุดกลับรถ','ทางลาด / ทางขึ้น-ลงเขา','สะพาน / ทางต่างระดับ','ทางคู่ขนาน','หน้าทางเข้าซอย'];
+  const rdTypeHtml = rdTypes.map(o => `<option${r.roadType===o?' selected':''}>${o}</option>`).join('');
+
+  const rdConds = ['แห้ง','เปียก / มีน้ำขัง','ขรุขระ / มีหลุม','มีทราย / กรวด','มีน้ำมันหก','กำลังก่อสร้าง'];
+  const rdCondHtml = rdConds.map(o => `<option${r.roadCond===o?' selected':''}>${o}</option>`).join('');
+
+  const accTypes = ['รถชนกัน (2 คัน)','รถชนกัน (หลายคัน)','รถชนคนเดินเท้า','รถพลิกคว่ำ / ตกร่อง','รถชนสิ่งกีดขวาง','รถจักรยานยนต์ล้ม','อื่นๆ'];
+  const accTypeHtml = accTypes.map(o => `<option${r.type===o?' selected':''}>${o}</option>`).join('');
+
+  const causes = ['ขับรถชนท้าย','ขับรถตัดหน้า','ฝ่าสัญญาณไฟแดง','ขับรถย้อนศร','เมาสุรา / เสพยา','หลับในขณะขับขี่','ขับรถเร็วเกินกำหนด','ขับรถไม่ชำนาญทาง','เปลี่ยนช่องทางกะทันหัน','อื่นๆ'];
+  const causeHtml = causes.map(o => `<option${r.cause===o?' selected':''}>${o}</option>`).join('');
+
+  const sevBtns = [1,2,3].map(n => {
+    const labels = {1:'รุนแรง',2:'ปานกลาง',3:'เล็กน้อย'};
+    const colors = {1:'#FCEBEB',2:'FAEEDA',3:'#EAF3DE'};
+    const dotCls = {1:'dot-r',2:'dot-a',3:'dot-g'};
+    const active = r.sevNum === n;
+    return `<div id="esev-${n}" onclick="setEditSev(${n})" style="flex:1;padding:9px 6px;border-radius:8px;border:2px solid ${active?'#1E3A8A':'#E2E8F0'};background:${active?'#EFF6FF':'#fff'};font-size:13px;font-weight:${active?'700':'500'};color:${active?'#1E3A8A':'#64748B'};cursor:pointer;text-align:center;transition:all .15s">
+      <span class="dot ${dotCls[n]}" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px"></span>${labels[n]}</div>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'edit-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(11,28,61,.75);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto';
+
+  overlay.innerHTML = `<div style="background:#fff;border-radius:16px;width:100%;max-width:520px;overflow:hidden;margin:auto">
+    <div style="background:linear-gradient(135deg,#0B1C3D,#1E3A8A);padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+      <span style="color:#fff;font-size:14px;font-weight:700">✏️ แก้ไขรายงาน ${r.id}</span>
+      <button id="edit-close-btn" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1;padding:0">×</button>
+    </div>
+    <div style="padding:16px;max-height:80vh;overflow-y:auto">
+
+      <!-- ระดับความรุนแรง -->
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.05em">ระดับความรุนแรง</label>
+        <div style="display:flex;gap:8px;margin-top:6px">${sevBtns}</div>
+      </div>
+
+      <!-- ถนน -->
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;color:#64748B">ถนน / เส้นทาง</label>
+        <select id="e-road" onchange="toggleEditRoadOther()" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px">
+          <option value="">-- เลือกถนน --</option>${roadOptHtml}
+          <option value="__OTHER__"${isOtherRoad?' selected':''}>ถนนอื่นๆ (ระบุเอง)</option>
+        </select>
+        <input id="e-road-other" value="${isOtherRoad?r.road:''}" placeholder="ระบุชื่อถนน/เส้นทาง" style="display:${isOtherRoad?'block':'none'};width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:6px">
+      </div>
+
+      <!-- จุดเกิดเหตุ + ตำบล -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div><label style="font-size:11px;color:#64748B">จุดเกิดเหตุ</label>
+          <input id="e-spot" value="${r.spot||''}" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px"></div>
+        <div><label style="font-size:11px;color:#64748B">ตำบล</label>
+          <select id="e-tambon" style="width:100%;padding:8px 8px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px">
+            <option value="">-- เลือก --</option>${tambonOptHtml}
+          </select></div>
+      </div>
+
+      <!-- ลักษณะถนน + สภาพพื้นถนน -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div><label style="font-size:11px;color:#64748B">ลักษณะถนน</label>
+          <select id="e-road-type" style="width:100%;padding:8px 8px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px">
+            <option value="">-- เลือก --</option>${rdTypeHtml}
+          </select></div>
+        <div><label style="font-size:11px;color:#64748B">สภาพพื้นถนน</label>
+          <select id="e-road-cond" style="width:100%;padding:8px 8px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px">
+            <option value="">-- เลือก --</option>${rdCondHtml}
+          </select></div>
+      </div>
+
+      <!-- ประเภท + ลักษณะ -->
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;color:#64748B">ประเภทอุบัติเหตุ</label>
+        <select id="e-acc-type" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px">
+          <option value="">-- เลือก --</option>${accTypeHtml}
+        </select>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;color:#64748B">ลักษณะการเกิดเหตุ</label>
+        <select id="e-acc-cause" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px">
+          <option value="">-- เลือก --</option>${causeHtml}
+        </select>
+      </div>
+
+      <!-- บาดเจ็บ / เสียชีวิต -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div><label style="font-size:11px;color:#64748B">ผู้บาดเจ็บ (คน)</label>
+          <input id="e-injured" type="number" min="0" value="${r.injured||0}" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px;text-align:center"></div>
+        <div><label style="font-size:11px;color:#64748B">ผู้เสียชีวิต (คน)</label>
+          <input id="e-dead" type="number" min="0" value="${r.dead||0}" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px;text-align:center"></div>
+      </div>
+
+      <!-- รายละเอียด + เจ้าหน้าที่ -->
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;color:#64748B">รายละเอียดเพิ่มเติม</label>
+        <textarea id="e-detail" rows="2" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px;resize:none">${r.detail||''}</textarea>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;color:#64748B">เจ้าหน้าที่ผู้รายงาน</label>
+        <input id="e-officer" value="${r.officer||''}" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;margin-top:4px">
+      </div>
+
+      <!-- คู่กรณี -->
+      <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">ข้อมูลคู่กรณี</div>
+      <div id="edit-drivers-container">${drvHtml}</div>
+      <button onclick="addEditDriver()" style="width:100%;padding:8px;background:#F0F4FF;border:1.5px dashed #C7D7FF;border-radius:8px;font-size:13px;color:#1E3A8A;cursor:pointer;margin-bottom:16px">+ เพิ่มคู่กรณี</button>
+
+      <!-- ปุ่ม -->
+      <div style="display:flex;gap:8px">
+        <button id="edit-cancel-btn" style="flex:1;padding:12px;background:#F1F5F9;border:none;border-radius:10px;font-size:14px;cursor:pointer;color:#475569;font-weight:600">ยกเลิก</button>
+        <button id="edit-save-btn" style="flex:2;padding:12px;background:linear-gradient(135deg,#0B1C3D,#1E3A8A);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;color:#fff">💾 บันทึกการแก้ไข</button>
+      </div>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+
+  // เก็บ sevNum ที่กำลังแก้ไข
+  window._editSevNum = r.sevNum || 2;
+
+  document.getElementById('edit-close-btn').onclick  = () => overlay.remove();
+  document.getElementById('edit-cancel-btn').onclick = () => overlay.remove();
+  document.getElementById('edit-save-btn').onclick   = () => saveEdit(idx);
+
+  // click outside
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+}
+
+function setEditSev(n) {
+  window._editSevNum = n;
+  [1,2,3].forEach(function(i) {
+    const el = document.getElementById('esev-'+i);
+    if (!el) return;
+    const active = i === n;
+    el.style.border        = '2px solid ' + (active ? '#1E3A8A' : '#E2E8F0');
+    el.style.background    = active ? '#EFF6FF' : '#fff';
+    el.style.fontWeight    = active ? '700' : '500';
+    el.style.color         = active ? '#1E3A8A' : '#64748B';
+  });
+}
+
+function toggleEditRoadOther() {
+  const sel = document.getElementById('e-road');
+  const inp = document.getElementById('e-road-other');
+  if (!sel || !inp) return;
+  inp.style.display = sel.value === '__OTHER__' ? 'block' : 'none';
+  if (sel.value !== '__OTHER__') inp.value = '';
+}
+
+let _editDrvCount = 0;
+function addEditDriver() {
+  _editDrvCount++;
+  const n = 'new' + _editDrvCount;
+  const vtypes = ['รถยนต์กระบะ','รถยนต์เก๋ง','รถบรรทุก','รถบรรทุกพ่วง','รถจักรยานยนต์','รถจักรยาน','คนเดินเท้า','อื่นๆ (ระบุในหมายเหตุ)'];
+  const safetyOpts = ['สวมหมวกนิรภัย','ไม่สวมหมวกนิรภัย','คาดเข็มขัดนิรภัย','ไม่คาดเข็มขัดนิรภัย'];
+  const div = document.createElement('div');
+  div.id = 'edc-' + n;
+  div.style.cssText = 'background:#F8FAFF;border:1px solid #DBEAFE;border-radius:8px;padding:10px;margin-bottom:8px';
+  div.innerHTML = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+    <span style="font-weight:600;font-size:13px">คู่กรณีใหม่</span>
+    <span onclick="document.getElementById('edc-${n}').remove()" style="margin-left:auto;cursor:pointer;font-size:18px;color:#94A3B8">×</span>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div style="grid-column:1/-1"><label style="font-size:11px;color:#64748B">ชื่อ-นามสกุล</label>
+      <input id="edn-${n}" placeholder="สมชาย ใจดี" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px"></div>
+    <div><label style="font-size:11px;color:#64748B">เพศ</label>
+      <select id="edg-${n}" style="width:100%;padding:7px 8px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px">
+        <option value="">--</option><option>ชาย</option><option>หญิง</option>
+      </select></div>
+    <div><label style="font-size:11px;color:#64748B">อายุ</label>
+      <input id="eda-${n}" type="number" placeholder="35" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px;text-align:center"></div>
+    <div><label style="font-size:11px;color:#64748B">โทรศัพท์</label>
+      <input id="edp-${n}" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px"></div>
+    <div><label style="font-size:11px;color:#64748B">ทะเบียนรถ</label>
+      <input id="edl-${n}" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px;text-transform:uppercase;font-family:monospace;font-weight:700"></div>
+    <div><label style="font-size:11px;color:#64748B">จังหวัด</label>
+      <input id="edv-${n}" placeholder="ชลบุรี" style="width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px"></div>
+    <div><label style="font-size:11px;color:#64748B">ประเภทรถ</label>
+      <select id="edt-${n}" style="width:100%;padding:7px 8px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px">
+        <option value="">-- เลือก --</option>${vtypes.map(o=>`<option>${o}</option>`).join('')}
+      </select></div>
+    <div><label style="font-size:11px;color:#64748B">อุปกรณ์นิรภัย</label>
+      <select id="eds-${n}" style="width:100%;padding:7px 8px;border:1.5px solid #E2E8F0;border-radius:7px;font-size:13px;margin-top:3px">
+        <option value="">-- เลือก --</option>${safetyOpts.map(o=>`<option>${o}</option>`).join('')}
+      </select></div>
+  </div>`;
+  document.getElementById('edit-drivers-container').appendChild(div);
+}
+
+function collectEditDrivers() {
+  const drivers = [];
+  document.getElementById('edit-drivers-container').querySelectorAll('[id^="edc-"]').forEach(function(card) {
+    const n      = card.id.replace('edc-','');
+    const name   = document.getElementById('edn-'+n)?.value || '';
+    const gender = document.getElementById('edg-'+n)?.value || '';
+    const age    = document.getElementById('eda-'+n)?.value || '';
+    const phone  = document.getElementById('edp-'+n)?.value || '';
+    const plate  = (document.getElementById('edl-'+n)?.value || '').toUpperCase();
+    const prov   = document.getElementById('edv-'+n)?.value || '';
+    const vtype  = document.getElementById('edt-'+n)?.value || '';
+    const safety = document.getElementById('eds-'+n)?.value || '';
+    const plateStr = plate + (prov ? ' (' + prov + ')' : '');
+    drivers.push({ name, gender, age, phone, plate: plateStr, vtype, safety });
+  });
+  return drivers;
+}
+
+async function saveEdit(idx) {
+  const r   = reports[idx];
+  const btn = document.getElementById('edit-save-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+
+  const sevNum   = window._editSevNum || r.sevNum || 2;
+  const SL       = {1:'รุนแรง',2:'ปานกลาง',3:'เล็กน้อย'};
+  const roadSel  = document.getElementById('e-road')?.value;
+  const road     = roadSel === '__OTHER__'
+    ? (document.getElementById('e-road-other')?.value || r.road)
+    : (roadSel || r.road);
+
+  const updated = {
+    id:       r.id,
+    date:     r.date,           // ไม่แก้วันที่
+    time:     r.time,           // ไม่แก้เวลา
+    road:     road,
+    spot:     document.getElementById('e-spot')?.value     ?? r.spot,
+    tambon:   document.getElementById('e-tambon')?.value   || r.tambon,
+    roadType: document.getElementById('e-road-type')?.value|| r.roadType,
+    roadCond: document.getElementById('e-road-cond')?.value|| r.roadCond,
+    type:     document.getElementById('e-acc-type')?.value || r.type,
+    cause:    document.getElementById('e-acc-cause')?.value|| r.cause,
+    severity: SL[sevNum],
+    sevNum:   sevNum,
+    injured:  +(document.getElementById('e-injured')?.value ?? r.injured),
+    dead:     +(document.getElementById('e-dead')?.value    ?? r.dead),
+    detail:   document.getElementById('e-detail')?.value   ?? r.detail,
+    officer:  document.getElementById('e-officer')?.value  || r.officer,
+    gps:      r.gps,            // ไม่แก้ GPS
+    photos:   r.photos,         // ไม่แก้รูป
+    drivers:  collectEditDrivers()
+  };
+
+  try {
+    const d = await callWorker('/report', updated, 'PATCH');
+    if (d.status !== 'success') {
+      showToast('แก้ไข Error: ' + d.message, 'err');
+      btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข';
+      return;
+    }
+    // อัปเดต memory
+    reports[idx] = updated;
+    renderHistory();
+    document.getElementById('edit-overlay')?.remove();
+    showToast('แก้ไขสำเร็จ ✓', 'ok');
+  } catch(e) {
+    showToast('แก้ไข Error: ' + e.message, 'err');
+    btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข';
+  }
 }
 
 // ── PDF ────────────────────────────────────────────────────
@@ -1958,11 +2290,14 @@ async function testLine(){
 }
 
 // ── callWorker — เรียก Cloudflare Worker (เร็วกว่า Apps Script มาก) ──
-async function callWorker(path, body=null) {
+async function callWorker(path, body=null, method=null) {
   const url = CONFIG.WORKER_URL + path;
-  const opts = body
-    ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }
-    : { method:'GET' };
+  let opts;
+  if (body) {
+    opts = { method: method||'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) };
+  } else {
+    opts = { method: method||'GET' };
+  }
   const res  = await fetch(url, opts);
   const text = await res.text();
   try { return JSON.parse(text); }
