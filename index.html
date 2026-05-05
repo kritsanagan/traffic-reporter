@@ -1871,7 +1871,7 @@ function renderBars(id,obj,colors,isTime){
 function showPdf(i){
   const r=reports[i];
   const st=document.getElementById('pdf-station').value||station||'สถานีตำรวจ';
-  const of=document.getElementById('pdf-officer').value||officer||'เจ้าหน้าที่ผู้รายงาน';
+  const of=document.getElementById('pdf-officer').value||(r&&r.officer)||'เจ้าหน้าที่ผู้รายงาน';
   const dHTML=r.drivers&&r.drivers.length?r.drivers.map((d,di)=>`
     <div class="pdf-driver">
       <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">คู่กรณีที่ ${di+1}</div>
