@@ -835,7 +835,7 @@ const CONFIG = {
         <label>พิกัด GPS <span style="font-size:11px;color:var(--muted);font-weight:400">— พิมพ์เองหรือกดปุ่ม GPS</span></label>
         <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
           <input class="gps-manual" id="retro-gps"
-            placeholder="เช่น 13.35849° N, 100.98276° E"
+            placeholder="เช่น 13.35849, 100.98276"
             style="flex:1;margin-top:0">
           <button onclick="getGPSRetro()" style="padding:10px 14px;background:var(--blue2);color:#fff;border:none;border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap;flex-shrink:0">📍 GPS</button>
         </div>
@@ -948,10 +948,10 @@ const CONFIG = {
         <option>อื่นๆ</option>
       </select></div>
     <div class="two-col" style="margin-bottom:12px">
-      <div class="field" style="margin:0"><label>ผู้บาดเจ็บ (คน)</label>
-        <input type="number" min="0" id="injured" placeholder="0" style="text-align:center"></div>
-      <div class="field" style="margin:0"><label>ผู้เสียชีวิต (คน)</label>
-        <input type="number" min="0" id="dead" placeholder="0" style="text-align:center"></div>
+      <div class="field" style="margin:0"><label>ผู้บาดเจ็บ (คน) <span style="font-size:10px;color:var(--muted);font-weight:400">อัตโนมัติ</span></label>
+        <input type="number" min="0" id="injured" placeholder="0" readonly style="text-align:center;background:#F8FAFC;color:#475569" title="คำนวณอัตโนมัติจากสภาพคู่กรณี"></div>
+      <div class="field" style="margin:0"><label>ผู้เสียชีวิต (คน) <span style="font-size:10px;color:var(--muted);font-weight:400">อัตโนมัติ</span></label>
+        <input type="number" min="0" id="dead" placeholder="0" readonly style="text-align:center;background:#F8FAFC;color:#475569" title="คำนวณอัตโนมัติจากสภาพคู่กรณี"></div>
     </div>
     <div class="slabel">ข้อมูลคู่กรณีและยานพาหนะ <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— ไม่บังคับ</span></div>
     <div id="drivers-container"></div>
@@ -1211,7 +1211,7 @@ function getGPS(){
   navigator.geolocation.getCurrentPosition(
     pos=>{
       const lat=pos.coords.latitude.toFixed(5), lng=pos.coords.longitude.toFixed(5);
-      gpsCoords=lat+'° N, '+lng+'° E';
+      gpsCoords=lat+', '+lng;
       document.getElementById('loc-text').textContent=gpsCoords;
       document.getElementById('loc-sub').textContent='แม่นยำ ±'+Math.round(pos.coords.accuracy)+'m';
     },
@@ -1227,14 +1227,33 @@ function setSev(n){
 }
 
 // ── Drivers ────────────────────────────────────────────────
-function addDriver(name='',phone='',plate='',province='',vtype='',gender='',age=''){
+function addDriver(name='',phone='',plate='',province='',vtype='',gender='',age='',condition=''){
   driverCount++;
   const n=driverCount, div=document.createElement('div');
   div.className='driver-card'; div.id='dc-'+n;
-  div.innerHTML=`<div class="driver-head"><div class="dnum">${n}</div>คู่กรณีที่ ${n}
-    <span onclick="removeDriver(${n})" style="margin-left:auto;cursor:pointer;font-size:20px;color:var(--muted);line-height:1">×</span></div>
+  div.dataset.type = 'driver';
+
+  const condColors = {'ไม่บาดเจ็บ':'#D1FAE5|#065F46','บาดเจ็บ':'#FEF3C7|#92400E','เสียชีวิต':'#FEE2E2|#991B1B'};
+  const condBtns = ['ไม่บาดเจ็บ','บาดเจ็บ','เสียชีวิต'].map(c=>{
+    const active = condition===c;
+    const [bg,fg] = (condColors[c]||'#F1F5F9|#475569').split('|');
+    return `<button type="button" id="dcond-${n}-${c}" onclick="setCondition(${n},'${c}')" style="flex:1;padding:6px 2px;border-radius:8px;border:1.5px solid ${active?fg:'#E2E8F0'};background:${active?bg:'#fff'};color:${active?fg:'#94A3B8'};font-size:12px;font-weight:${active?700:500};cursor:pointer;transition:all .15s">${c==='ไม่บาดเจ็บ'?'✅ ไม่บาดเจ็บ':c==='บาดเจ็บ'?'🤕 บาดเจ็บ':'💔 เสียชีวิต'}</button>`;
+  }).join('');
+
+  const vtypes = ['รถยนต์กระบะ','รถยนต์เก๋ง','รถยนต์ SUV/PPV','รถตู้โดยสาร','รถบัสโดยสาร','รถบรรทุก','รถบรรทุกพ่วง','รถจักรยานยนต์','รถจักรยาน','คนเดินเท้า','อื่นๆ (ระบุในหมายเหตุ)'];
+  const vtHtml = vtypes.map(o=>`<option ${vtype===o?'selected':''}>${o}</option>`).join('');
+
+  div.innerHTML=`
+    <div class="driver-head">
+      <div class="dnum">${n}</div>
+      <div style="flex:1;font-weight:700;font-size:13px">คู่กรณีที่ ${n}</div>
+      <span style="background:#EFF6FF;color:#1E40AF;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px">🚗 ผู้ขับขี่</span>
+      <span onclick="removeDriver(${n})" style="margin-left:8px;cursor:pointer;font-size:22px;color:var(--muted);line-height:1;padding:0 2px">×</span>
+    </div>
+
     <div class="field" style="margin-bottom:10px"><label>ชื่อ-นามสกุล</label>
-      <input type="text" id="dn-${n}" placeholder="สมชาย ใจดี" value="${name}"></div>
+      <input type="text" id="dn-${n}" placeholder="ชื่อ นามสกุล" value="${name}"></div>
+
     <div class="two-col" style="margin-bottom:10px">
       <div class="field" style="margin:0"><label>เพศ</label>
         <select id="dg-${n}">
@@ -1243,39 +1262,180 @@ function addDriver(name='',phone='',plate='',province='',vtype='',gender='',age=
           <option ${gender==='หญิง'?'selected':''}>หญิง</option>
         </select></div>
       <div class="field" style="margin:0"><label>อายุ (ปี)</label>
-        <input type="number" min="1" max="120" id="da-${n}" placeholder="35" value="${age}" style="text-align:center"></div>
+        <input type="number" min="1" max="120" id="da-${n}" placeholder="25" value="${age}" style="text-align:center"></div>
     </div>
+
     <div class="two-col" style="margin-bottom:10px">
       <div class="field" style="margin:0"><label>โทรศัพท์</label>
-        <input type="tel" id="dp-${n}" placeholder="08X-XXX-XXXX" value="${phone}"></div>
-      <div class="field" style="margin:0"><label>เลขทะเบียน</label>
-        <input type="text" id="dl-${n}" placeholder="กข 1234" maxlength="12" value="${plate}"
-          style="text-transform:uppercase;font-family:monospace;font-weight:700;font-size:14px;letter-spacing:.05em"></div>
+        <input type="tel" id="dp-${n}" placeholder="0812345678" value="${phone}"></div>
+      <div class="field" style="margin:0"><label>ทะเบียนรถ</label>
+        <input type="text" id="dl-${n}" placeholder="กก 1234 (ชลบุรี)" maxlength="20" value="${plate}"
+          style="text-transform:uppercase;font-family:monospace;font-weight:700;font-size:13px"></div>
     </div>
-    <div class="two-col" style="margin-bottom:0">
-      <div class="field" style="margin:0"><label>จังหวัด (ทะเบียนรถ)</label>
-        <input type="text" id="dv-${n}" placeholder="เช่น ชลบุรี" value="${province}"></div>
-      <div class="field" style="margin:0"><label>ประเภทรถ</label>
+
+    <div class="two-col" style="margin-bottom:10px">
+      <div class="field" style="margin:0"><label>ประเภทยานพาหนะ</label>
         <select id="dt-${n}" style="font-size:13px" onchange="updateSafety('${n}')">
+          <option value="">-- เลือก --</option>${vtHtml}
+        </select></div>
+      <div class="field" id="ds-wrap-${n}" style="margin:0">
+        <label id="ds-label-${n}">อุปกรณ์นิรภัย</label>
+        <select id="ds-${n}" style="font-size:13px">
           <option value="">-- เลือก --</option>
-          <option ${vtype==='รถยนต์กระบะ'?'selected':''}>รถยนต์กระบะ</option>
-          <option ${vtype==='รถยนต์เก๋ง'?'selected':''}>รถยนต์เก๋ง</option>
-          <option ${vtype==='รถบรรทุก'?'selected':''}>รถบรรทุก</option>
-          <option ${vtype==='รถบรรทุกพ่วง'?'selected':''}>รถบรรทุกพ่วง</option>
-          <option ${vtype==='รถจักรยานยนต์'?'selected':''}>รถจักรยานยนต์</option>
-          <option ${vtype==='รถจักรยาน'?'selected':''}>รถจักรยาน</option>
-          <option ${vtype==='คนเดินเท้า'?'selected':''}>คนเดินเท้า</option>
-          <option ${vtype==='อื่นๆ'?'selected':''}>อื่นๆ (ระบุในหมายเหตุ)</option>
         </select></div>
     </div>
-    <div class="field" id="ds-wrap-${n}" style="margin-top:10px;display:none">
-      <label id="ds-label-${n}">อุปกรณ์นิรภัย</label>
-      <select id="ds-${n}">
-        <option value="">-- เลือก --</option>
-      </select></div>`;
+
+    <div class="field" style="margin-bottom:0"><label>สภาพผู้ขับขี่</label>
+      <div style="display:flex;gap:6px;margin-top:4px">${condBtns}</div>
+      <input type="hidden" id="dcond-${n}" value="${condition}"></div>
+
+    <div id="pax-section-${n}" style="margin-top:12px;border-top:1.5px dashed #BFDBFE;padding-top:10px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;color:#1E40AF;font-size:12px;font-weight:700">
+        👤 ผู้โดยสารในรถ <span id="pax-plate-label-${n}" style="color:#64748B;font-weight:500">(ทะเบียน ${plate||'—'})</span>
+      </div>
+      <div id="pax-list-${n}"></div>
+      <button type="button" onclick="addPassenger(${n})"
+        style="width:100%;padding:8px;background:#F0F9FF;border:1.5px dashed #7DD3FC;border-radius:8px;font-size:12px;color:#0369A1;cursor:pointer;font-weight:600;margin-top:4px">
+        👤 เพิ่มผู้โดยสารในรถคันนี้
+      </button>
+    </div>`;
+
+  const plateInput = div.querySelector('#dl-'+n);
+  plateInput?.addEventListener('input', function(){
+    const lbl = document.getElementById('pax-plate-label-'+n);
+    if(lbl) lbl.textContent = '(ทะเบียน '+(this.value.trim()||'—')+')';
+  });
+
+  // ถ้ามี vtype — trigger updateSafety เพื่อแสดง options ที่ถูกต้อง
+  if(vtype) setTimeout(()=>updateSafety(n), 0);
+
   document.getElementById('drivers-container').appendChild(div);
+  updateAutoSum();
 }
-function removeDriver(n){const e=document.getElementById('dc-'+n);if(e)e.remove();}
+
+// ผู้โดยสาร — เป็น sub-card ใน pax-list ของคู่กรณีต้นสังกัด// ผู้โดยสาร — เป็น sub-card ใน pax-list ของคู่กรณีต้นสังกัด
+function addPassenger(parentN, name='', phone='', gender='', age='', safety='', condition=''){
+  const paxList = document.getElementById('pax-list-'+parentN);
+  if(!paxList) return;
+  const paxIdx = paxList.children.length + 1;
+  const paxN   = 'p'+parentN+'_'+paxIdx;
+  const vtype  = document.getElementById('dt-'+parentN)?.value||'';
+  const plate  = document.getElementById('dl-'+parentN)?.value||'—';
+
+  const safetyOpts = vtype==='รถจักรยานยนต์'||vtype==='รถจักรยาน'
+    ? ['สวมหมวกนิรภัย','ไม่สวมหมวกนิรภัย']
+    : ['คาดเข็มขัดนิรภัย','ไม่คาดเข็มขัดนิรภัย'];
+  const safetyHtml = '<option value="">-- เลือก --</option>'+safetyOpts.map(o=>`<option${safety===o?' selected':''}>${o}</option>`).join('');
+
+  const condColors = {'ไม่บาดเจ็บ':'#D1FAE5|#065F46','บาดเจ็บ':'#FEF3C7|#92400E','เสียชีวิต':'#FEE2E2|#991B1B'};
+  const condBtns = ['ไม่บาดเจ็บ','บาดเจ็บ','เสียชีวิต'].map(c=>{
+    const active = condition===c;
+    const [bg,fg] = (condColors[c]||'#F1F5F9|#475569').split('|');
+    return `<button type="button" id="pcond-${paxN}-${c}" onclick="setPaxCondition('${paxN}','${c}')" style="flex:1;padding:6px 2px;border-radius:8px;border:1.5px solid ${active?fg:'#E2E8F0'};background:${active?bg:'#fff'};color:${active?fg:'#94A3B8'};font-size:12px;font-weight:${active?700:500};cursor:pointer;transition:all .15s">${c==='ไม่บาดเจ็บ'?'✅ ไม่บาดเจ็บ':c==='บาดเจ็บ'?'🤕 บาดเจ็บ':'💔 เสียชีวิต'}</button>`;
+  }).join('');
+
+  const div = document.createElement('div');
+  div.id = 'pax-'+paxN;
+  div.dataset.parent = String(parentN);
+  div.dataset.type   = 'passenger';
+  div.style.cssText  = 'background:#F8FAFF;border:1px solid #BFDBFE;border-radius:8px;padding:10px;margin-bottom:8px';
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <div style="width:22px;height:22px;border-radius:50%;background:#3B82F6;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${paxIdx}</div>
+      <span style="font-weight:700;font-size:12px">ผู้โดยสารที่ ${paxIdx}</span>
+      <span style="font-size:11px;color:#64748B">รถ: ${plate} · ${vtype||'ไม่ระบุ'}</span>
+      <button type="button" onclick="document.getElementById('pax-${paxN}').remove();updateAutoSum()"
+        style="margin-left:auto;width:22px;height:22px;border-radius:50%;background:#FEE2E2;color:#991B1B;border:none;font-size:15px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+
+    <div class="field" style="margin-bottom:8px"><label style="font-size:11px">ชื่อ-นามสกุล</label>
+      <input type="text" id="pn-${paxN}" placeholder="ชื่อ นามสกุล" value="${name}" style="font-size:13px"></div>
+
+    <div class="two-col" style="margin-bottom:8px">
+      <div class="field" style="margin:0"><label style="font-size:11px">เพศ</label>
+        <select id="pg-${paxN}" style="font-size:13px">
+          <option value="">-- เลือก --</option>
+          <option${gender==='ชาย'?' selected':''}>ชาย</option>
+          <option${gender==='หญิง'?' selected':''}>หญิง</option>
+        </select></div>
+      <div class="field" style="margin:0"><label style="font-size:11px">อายุ</label>
+        <input type="number" id="pa-${paxN}" placeholder="25" value="${age}" style="font-size:13px;text-align:center"></div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:8px">
+      <div class="field" style="margin:0"><label style="font-size:11px">โทรศัพท์</label>
+        <input type="tel" id="pp-${paxN}" placeholder="0812345678" value="${phone}" style="font-size:13px"></div>
+      <div class="field" style="margin:0"><label style="font-size:11px">อุปกรณ์นิรภัย</label>
+        <select id="ps-${paxN}" style="font-size:13px">${safetyHtml}</select></div>
+    </div>
+
+    <div class="field" style="margin:0"><label style="font-size:11px">สภาพผู้โดยสาร</label>
+      <div style="display:flex;gap:5px;margin-top:4px">${condBtns}</div>
+      <input type="hidden" id="pcond-${paxN}" value="${condition}"></div>`;
+
+  paxList.appendChild(div);
+  updateAutoSum();
+}
+
+function removeDriver(n){
+  const e=document.getElementById('dc-'+n);
+  if(e) e.remove();
+  updateAutoSum();
+}
+
+function setCondition(n, val){
+  document.getElementById('dcond-'+n).value = val;
+  const colors = {'ไม่บาดเจ็บ':'#D1FAE5|#065F46','บาดเจ็บ':'#FEF3C7|#92400E','เสียชีวิต':'#FEE2E2|#991B1B'};
+  ['ไม่บาดเจ็บ','บาดเจ็บ','เสียชีวิต'].forEach(c=>{
+    const btn = document.getElementById('dcond-'+n+'-'+c);
+    if(!btn) return;
+    const active = c===val;
+    const [bg,fg] = (colors[c]||'#F1F5F9|#475569').split('|');
+    btn.style.border     = '1.5px solid '+(active?fg:'#E2E8F0');
+    btn.style.background = active?bg:'#fff';
+    btn.style.color      = active?fg:'#94A3B8';
+    btn.style.fontWeight = active?'700':'500';
+  });
+  updateAutoSum();
+}
+
+function setPaxCondition(paxN, val){
+  document.getElementById('pcond-'+paxN).value = val;
+  const colors = {'ไม่บาดเจ็บ':'#D1FAE5|#065F46','บาดเจ็บ':'#FEF3C7|#92400E','เสียชีวิต':'#FEE2E2|#991B1B'};
+  ['ไม่บาดเจ็บ','บาดเจ็บ','เสียชีวิต'].forEach(c=>{
+    const btn = document.getElementById('pcond-'+paxN+'-'+c);
+    if(!btn) return;
+    const active = c===val;
+    const [bg,fg] = (colors[c]||'#F1F5F9|#475569').split('|');
+    btn.style.border     = '1.5px solid '+(active?fg:'#E2E8F0');
+    btn.style.background = active?bg:'#fff';
+    btn.style.color      = active?fg:'#94A3B8';
+    btn.style.fontWeight = active?'700':'500';
+  });
+  updateAutoSum();
+}
+
+function updateAutoSum(){
+  let injured=0, dead=0;
+  // นับจาก driver condition
+  document.querySelectorAll('[id^="dcond-"]').forEach(el=>{
+    if(el.tagName==='INPUT' && el.type==='hidden'){
+      if(el.value==='บาดเจ็บ')   injured++;
+      if(el.value==='เสียชีวิต') dead++;
+    }
+  });
+  // นับจาก passenger condition
+  document.querySelectorAll('[id^="pcond-"]').forEach(el=>{
+    if(el.tagName==='INPUT' && el.type==='hidden'){
+      if(el.value==='บาดเจ็บ')   injured++;
+      if(el.value==='เสียชีวิต') dead++;
+    }
+  });
+  const injEl = document.getElementById('injured');
+  const deadEl= document.getElementById('dead');
+  if(injEl)  injEl.value = injured;
+  if(deadEl) deadEl.value= dead;
+}
 
 function updateSafety(n){
   const vtype = document.getElementById('dt-'+n)?.value || '';
@@ -1289,7 +1449,7 @@ function updateSafety(n){
     label.textContent = 'การสวมหมวกนิรภัย';
     opts = ['สวมหมวกนิรภัย', 'ไม่สวมหมวกนิรภัย'];
     wrap.style.display = '';
-  } else if (vtype === 'รถยนต์กระบะ' || vtype === 'รถยนต์เก๋ง' || vtype === 'รถบรรทุก' || vtype === 'รถบรรทุกพ่วง') {
+  } else if (vtype === 'รถยนต์กระบะ' || vtype === 'รถยนต์เก๋ง' || vtype === 'รถยนต์ SUV/PPV' || vtype === 'รถตู้โดยสาร' || vtype === 'รถบัสโดยสาร' || vtype === 'รถบรรทุก' || vtype === 'รถบรรทุกพ่วง') {
     label.textContent = 'การคาดเข็มขัดนิรภัย';
     opts = ['คาดเข็มขัดนิรภัย', 'ไม่คาดเข็มขัดนิรภัย'];
     wrap.style.display = '';
@@ -1342,7 +1502,7 @@ function getGPSRetro(){
     pos => {
       const lat = pos.coords.latitude.toFixed(5);
       const lng = pos.coords.longitude.toFixed(5);
-      el.value = lat+'° N, '+lng+'° E';
+      el.value = lat+', '+lng;
       el.placeholder = '';
     },
     err => { el.placeholder = 'ระบุตำแหน่งไม่ได้: '+err.message; },
@@ -1352,24 +1512,44 @@ function getGPSRetro(){
 
 function collectDrivers(){
   const d=[];
-  document.querySelectorAll('[id^="dn-"]').forEach(el=>{
-    const n       = el.id.split('-')[1];
+  // วนเก็บจากทุก driver-card ตามลำดับที่ปรากฏใน DOM
+  document.querySelectorAll('#drivers-container .driver-card').forEach(card=>{
+    const n = card.id.replace('dc-','');
+
+    // ── ข้อมูลคู่กรณี (driver) ──
     const plate   = (document.getElementById('dl-'+n)?.value||'-').toUpperCase();
-    const province= document.getElementById('dv-'+n)?.value||'';
-    const plateStr= plate+(province?' ('+province+')':'');
-    const gender  = document.getElementById('dg-'+n)?.value||'';
-    const age     = document.getElementById('da-'+n)?.value||'';
     const vtype   = document.getElementById('dt-'+n)?.value||'';
-    const safety = document.getElementById('ds-'+n)?.value||'';
+    // รวม plate + province ไม่มี field province แยกแล้ว (รวมใน plate input เดียว)
     d.push({
-      name:   el.value||'ไม่ระบุ',
-      gender: gender,
-      age:    age,
-      phone:  document.getElementById('dp-'+n)?.value||'-',
-      plate:  plateStr,
-      vtype:  vtype,
-      safety: safety
+      name:        document.getElementById('dn-'+n)?.value||'ไม่ระบุ',
+      gender:      document.getElementById('dg-'+n)?.value||'',
+      age:         document.getElementById('da-'+n)?.value||'',
+      phone:       document.getElementById('dp-'+n)?.value||'-',
+      plate:       plate,
+      vtype:       vtype,
+      safety:      document.getElementById('ds-'+n)?.value||'',
+      condition:   document.getElementById('dcond-'+n)?.value||'',
+      person_type: 'driver'
     });
+
+    // ── ผู้โดยสารของคู่กรณีนี้ ──
+    const paxList = document.getElementById('pax-list-'+n);
+    if(paxList){
+      paxList.querySelectorAll('[id^="pax-"]').forEach(paxCard=>{
+        const paxN = paxCard.id.replace('pax-','');
+        d.push({
+          name:        document.getElementById('pn-'+paxN)?.value||'ไม่ระบุ',
+          gender:      document.getElementById('pg-'+paxN)?.value||'',
+          age:         document.getElementById('pa-'+paxN)?.value||'',
+          phone:       document.getElementById('pp-'+paxN)?.value||'-',
+          plate:       plate,   // รับ plate จากคู่กรณีต้นสังกัด
+          vtype:       vtype,   // รับ vtype จากคู่กรณีต้นสังกัด
+          safety:      document.getElementById('ps-'+paxN)?.value||'',
+          condition:   document.getElementById('pcond-'+paxN)?.value||'',
+          person_type: 'passenger'
+        });
+      });
+    }
   });
   return d;
 }
@@ -1892,7 +2072,7 @@ function openEditModal(idx) {
     const safetyHtml = safetyOpts.map(o =>
       `<option${d.safety===o?' selected':''}>${o}</option>`).join('');
 
-    const vtypes = ['รถยนต์กระบะ','รถยนต์เก๋ง','รถบรรทุก','รถบรรทุกพ่วง','รถจักรยานยนต์','รถจักรยาน','คนเดินเท้า','อื่นๆ (ระบุในหมายเหตุ)'];
+    const vtypes = ['รถยนต์กระบะ','รถยนต์เก๋ง','รถยนต์ SUV/PPV','รถตู้โดยสาร','รถบัสโดยสาร','รถบรรทุก','รถบรรทุกพ่วง','รถจักรยานยนต์','รถจักรยาน','คนเดินเท้า','อื่นๆ (ระบุในหมายเหตุ)'];
     const vtHtml = vtypes.map(o => `<option${d.vtype===o?' selected':''}>${o}</option>`).join('');
 
     drvHtml += `<div id="edc-${n}" style="background:#F8FAFF;border:1px solid #DBEAFE;border-radius:8px;padding:10px;margin-bottom:8px">
@@ -2091,7 +2271,7 @@ let _editDrvCount = 0;
 function addEditDriver() {
   _editDrvCount++;
   const n = 'new' + _editDrvCount;
-  const vtypes = ['รถยนต์กระบะ','รถยนต์เก๋ง','รถบรรทุก','รถบรรทุกพ่วง','รถจักรยานยนต์','รถจักรยาน','คนเดินเท้า','อื่นๆ (ระบุในหมายเหตุ)'];
+  const vtypes = ['รถยนต์กระบะ','รถยนต์เก๋ง','รถยนต์ SUV/PPV','รถตู้โดยสาร','รถบัสโดยสาร','รถบรรทุก','รถบรรทุกพ่วง','รถจักรยานยนต์','รถจักรยาน','คนเดินเท้า','อื่นๆ (ระบุในหมายเหตุ)'];
   const safetyOpts = ['สวมหมวกนิรภัย','ไม่สวมหมวกนิรภัย','คาดเข็มขัดนิรภัย','ไม่คาดเข็มขัดนิรภัย'];
   const div = document.createElement('div');
   div.id = 'edc-' + n;
